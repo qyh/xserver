@@ -9,4 +9,5 @@ lualoader = "lualib/loader.lua"
 cpath = "./cservice/?.so;../luaclib/?.so;"
 preload = '../server/preload.lua'
 websocket_port = 8008
+simpleweb_port = 8800
 --daemon="../skynet.pid"

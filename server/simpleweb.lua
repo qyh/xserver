@@ -1,5 +1,5 @@
 local skynet = require "skynet"
-local socket = require "socket"
+local socket = require "skynet.socket"
 local httpd = require "http.httpd"
 local sockethelper = require "http.sockethelper"
 local urllib = require "http.url"
@@ -64,12 +64,13 @@ else
 
 skynet.start(function()
 	local agent = {}
-	for i= 1, 20 do
+	for i= 1, 2 do
 		agent[i] = skynet.newservice(SERVICE_NAME, "agent")
 	end
 	local balance = 1
-	local id = socket.listen("0.0.0.0", 8001)
-	skynet.error("Listen web port 8001")
+	local port = skynet.getenv("simpleweb_port") or 8000 
+	local id = socket.listen("0.0.0.0", port)
+	skynet.error(string.format("Listen web port %s", port))
 	socket.start(id , function(id, addr)
 		skynet.error(string.format("%s connected, pass it to agent :%08x", addr, agent[balance]))
 		skynet.send(agent[balance], "lua", id)
