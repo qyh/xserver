@@ -1,4 +1,6 @@
 local logger = require "logger"
+local urllib = require "http.url"
+local futil = require "futil"
 local request_handler = {}
 
 local function root(method, header, query, body)
@@ -13,6 +15,8 @@ end
 
 local function wechat_auth_callback(method, header, query, body)
     logger.debug('wechat_auth_callback:query:%s,body:%s', query, body)
+	local _, q = urllib.parse(query)
+	logger.debug("q:%s", futil.toStr(q))
 	return ""
 end
 local path_handler = {
