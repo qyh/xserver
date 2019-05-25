@@ -1,6 +1,5 @@
 local skynet = require "skynet"
 local httpc = require "http.httpc"
-local crypt = require "crypt"
 local md5 = require "md5"
 local codec = require('codec')
 local xmlser = require "xml-ser"
@@ -640,7 +639,7 @@ oT3zxmk5RxUE7vjjgQ9nm2IYS9KQtikkj39YkqnqVdVcfWIJ1HNh23
 	--[[
     local priv_key, priv_type = cryptopp.pem2der(pri_key)
     local signer = cryptopp.rsa_signer(priv_key)
-    local sign = (crypt.base64encode(signer(sign_str)))
+    local sign = (cryptopp.base64enc(signer(sign_str)))
 	]]
 	logger.debug("%s", codec.rsa_private_sign_sha256withrsa)
 	local ok, bs = xpcall(codec.rsa_private_sign_sha256withrsa, handle_error, sign_str, pri_key)
@@ -710,7 +709,7 @@ local function alipay_precreate()
     skynet.error(string.format('sign string:%s', sign_str))
     local priv_key, priv_type = cryptopp.pem2der(alipay_config.rsa_pri)
     local signer = cryptopp.rsa_signer(priv_key)
-    local sign = (crypt.base64encode(signer(sign_str)))
+    local sign = (cryptopp.base64enc(signer(sign_str)))
     skynet.error(string.format('sign:%s', sign))
     params.sign = sign 
     --- send http request
@@ -766,7 +765,7 @@ local function test_rsa()
     local priv_key, priv_type = cryptopp.pem2der(alipay_config.rsa_pri)
     local signer = cryptopp.rsa_signer(priv_key)
     local sign = signer(sign_str)
-    local sign_base64 = crypt.base64encode(sign)
+    local sign_base64 = cryptopp.base64enc(sign)
     --local sign = codec.rsa_private_sign(sign_str, alipay_config.rsa_pri)
     --local sign_base64 = codec.base64_encode(sign)
 
@@ -776,7 +775,7 @@ local function test_rsa()
     local verifier = cryptopp.rsa_verifier(pub_key)
     local verify_str = 'app_id=2016080200153059&auth_app_id=2016080200153059&body=body&buyer_id=2088102172197965&buyer_logon_id=odr***@sandbox.com&buyer_pay_amount=2.00&charset=GBK&fund_bill_list=[{"amount":"2.00","fundChannel":"ALIPAYACCOUNT"}]&gmt_create=2017-05-15 15:17:23&gmt_payment=2017-05-15 15:17:47&invoice_amount=2.00&notify_id=bbb6fe8b93fb2417cab961189ea4603neq&notify_time=2017-05-15 15:17:47&notify_type=trade_status_sync&open_id=20881064086152293543565750017196&out_trade_no=1494832554.78&point_amount=0.00&receipt_amount=2.00&seller_email=widvej2444@sandbox.com&seller_id=2088102169679711&subject=支付标题&total_amount=2.00&trade_no=2017051521001004960200272651&trade_status=TRADE_SUCCESS&version=1.0' 
     local alipay_sign = "Tsc974Di5KNWekfO8H4CbMwO/u+bpRMCT0tqBYtjKht6w9O08DVxm40wGgA6xmyAjqJVxpcVjiTJINi4O5yRxGmHhJRe54KUQqCyCUlMXsQtqBIg2kqtsYajYWganLdzEOAG4YVLaxUinZ41CzcPV+N8fMnwP9OhFm4rp/gN4L8="
-    local r = verifier(verify_str, futil.urldecode(crypt.base64decode(alipay_sign)))
+    local r = verifier(verify_str, futil.urldecode(cryptopp.base64dec(alipay_sign)))
     skynet.error('verifier:%s', r)
 end
 
