@@ -1,5 +1,5 @@
 local skynet = require "skynet"
---local logger = require "logger"
+local logger = require "logger"
 skynet.start(function()
 	local loginserver = skynet.newservice("logind")
 	local gate = skynet.newservice("gated", loginserver)
