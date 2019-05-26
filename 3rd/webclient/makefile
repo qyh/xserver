@@ -6,7 +6,7 @@ CURL_LIB_DIR = ../curl/lib
 webclient_core.so:
 	gcc -Wall -O2 -std=c99 webclient.c -o webclient_core.so -shared -fPIC  -I$(LUA_INCLUDE_DIR) -I$(CURL_INCLUDE_DIR)  -L$(CURL_LIB_DIR) -lcurl
 	cp webclient_core.so ../../luaclib/ -rf
-	cp webclient.lua ../../server/webclient.lua
+	cp webclient.lua ../../service/webclient.lua
 
 clean:
 	rm -rf *.so *.o
