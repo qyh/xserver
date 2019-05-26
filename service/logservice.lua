@@ -17,7 +17,7 @@ local function open_log_file()
     end
     if not logObj then
         os.execute('mkdir -p '..log_dir)
-		local log_full_name = log_dir.."/"..filename.."_"..futil.dayStr()..".log"
+		local log_full_name = log_dir.."/"..filename.."-"..futil.dayStr()..".log"
         logObj = io.open(log_full_name, "a+")
         if logObj then
             skynet.error(string.format("open log file:%s success", log_full_name))
