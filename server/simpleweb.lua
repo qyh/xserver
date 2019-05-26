@@ -47,6 +47,7 @@ skynet.start(function()
 				table.insert(tmp, "-----body----\n" .. body)
                 ]]
                 local msg = request_handler.handle_request(path, method, header, query, body)
+				msg = msg or "OK"
 				response(id, code, msg..'\n\n')
 			end
 		else
