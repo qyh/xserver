@@ -1,6 +1,7 @@
 thread = 8
+--logger = "../log.txt" 
 name = "xserver"
---logger = "../log/"..name..".log" 
+logger = "../log/"..name.."_core.log" 
 logpath = "../log"
 harbor = 0
 start = "main"
@@ -12,4 +13,4 @@ cpath = "./cservice/?.so;../luaclib/?.so;"
 preload = '../server/preload.lua'
 websocket_port = 8008
 simpleweb_port = 80 
---daemon="../skynet.pid"
+daemon="../skynet.pid"
