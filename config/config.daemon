@@ -13,4 +13,14 @@ cpath = "./cservice/?.so;../luaclib/?.so;"
 preload = '../server/preload.lua'
 websocket_port = 8008
 simpleweb_port = 80 
-daemon="../skynet.pid"
+daemon="../"..name..".pid"
+redis_conf = [[{
+	"host":"127.0.0.1",
+	"port": 6379,
+	"auth": "",
+	"db": 0
+}]]
+mysql_conf = [[{
+	"host":"127.0.0.1",
+	"port":3306
+}]]
