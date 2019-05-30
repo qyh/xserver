@@ -170,7 +170,21 @@ local function validateLkUser(openid, token)
     skynet.error('body:'..body)
     return ret
 end
-
+local function sort_params(params)
+    local p = {}
+    for k, v in pairs(params) do
+        if k ~= 'sign' and v then
+            table.insert(p,k)
+        end
+    end
+    table.sort(p)
+    local str = p[1]..'='..params[p[1]]
+    p[1] = nil
+    for _, k in pairs(p) do
+        str = str..'&'..k..'='..params[k]
+    end
+    return str 
+end
 local function getUserInfo(openid, token)
     local ec = const.error_code
     local ret = {
@@ -218,27 +232,57 @@ local function getUserInfo(openid, token)
 
     return ret
 end
+local function alipay_auth()
+	local alipay = {
+		appId = "2019052465364222",
+		priKey = [[
+-----BEGIN RSA PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCab0bW1tJ5ARhHlAEVcVhCpupaDjkMusfOQq03mITYnO8bFZ8xObQbGuYzjiNdSYXyCyGeFavDZgb5Ni8BrCW8IMmVE8nvsiQxpImTlodSXl9GA1rCSTUR/wG/BCnquJajyq9eCO6Ls4sMeqTlvikbSXohKms5pyAX8IxQ+QVPtFNivesQkEJa+KHowQG4fjuBkE7zIJ0TJeLSDePgxwtBqfXOdS8tjTdtRl53vskUkD99/yDVmlpqNOe+cUwkq8/jxJeBVfAptZUN/EYpbSkFZAtu19AIbCVeOKFmncBLYpX1aIrnp3+qRg15c5Yx1kz3FBhxuiJzZvQlORMshRERAgMBAAECggEAPEmUbeoO4A39XHP6uFQ3EE34zo8e1klUFsEQvdNciPM6pGgcbSsJlEs78oRaaeB52bNevEfZdb4umrr8PrrlQDvMddXzzw7L8lU5H9Rzn0QYDUzh8VaC0TOritYlRuwoYmiNbTgvZ3n/ni+Cj+1cPrrAYpIcqbUEYlQVcsbDvAkdi7BaJ4w9S8nY8IEJi4rLb1hlFL9y6hmESe6coLY1PtKxs2I852U9b67NAM2Gj68jBgApWb7554wIahobOXypsVm+82ibRS2+kVM2EpEgVmXN4fHXtxtoMEuX7J9QCh7NgFLTRKv9NKhximqg5oc0t3vPqvAp54qtC43Xux0gAQKBgQDXEWV0tDFQ/Jy/8ZusehKYFIXQ7ExEnY0DWpFKYHV6aRXc7QhWzIq6jTuZLHl5blAdh7TUwdWxfkRvDhcQS7/TOx1+Cenhqwqpujh6xR7d/194zoSfuZ+Nxiim2ygR5H8S1xiG4xssF15RnKroCDQLR6QcXQ1MTgP5Cw/kmPdu8QKBgQC307AjgpIgW5DUF93T6s4HtQw1h6opnVZykG7s646qF2sbOKPqsa2/G3oSyVMBjGraL5L9NXdLhJ2KPQ4iCQhz9AaEHyGfkU8k+PhktbmH8kOb/qBrnYmEbMwskul3jaT/NGcxuzrRFfh7eT1wrDHA+lvmj1BADiBVVhblzSQEIQKBgGyOY1+c9KekWpqoIaPVmj0ZXtIt8/FOdTcUJ/Ia7jFziY2SN3tYk03GrCaMxGP+woGlViluDachzPkha5LWKWU9mY1dA6jc5Oz3Cjst9H6pwE8CLv9QerDdLPfL91XQuDOSTtcHG1gOE5WuNrYYLezjpHqMnYG+f1Lduo/whjSBAoGAS06Nef6jnl3klv6wAYDPppikx8ksDKBIKebBio11hHjTh/NMM3lWlFPNTqTrPFcp7vhOXyzoEifh4h/hClBpBheSE84tGBGPOrZEC/3mY6r7x4woa+29yGJJwnjs6+07CtGM9PKexckaYnrokJ/6QfROccWEOrmOxWbfOoUvnAECgYEAyelEGr5Euz7B3HJ5TL3aLz49QVcMd5E/Z7bWY4i6YlbzSCfnw6AV5pI3kjdsADNkJLY+zRE/oSUFmEDes4WQYw0mcC3eJ10oINtOrycl3P6mnWSbMBuMZ1+VSaBJIrL8M1bQ8fRuTAKYfBS88WA9UwLINK0on6MbtjuUUkX91bc=
+-----END RSA PRIVATE KEY-----]]
+	}
+	
+	if not alipay and next(alipay) then
+		logger.error("get alipay appid failed")
+		return code_utils.package(cmd, code_constants.FAILURE)
+	end
+	if true then
+		local biz_content = {
+			scopes = "auth_user"
+		}
 
+		local params = {}
+		params.app_id = alipay.appId
+		params.method = "alipay.user.info.auth"
+		params.format = "JSON"
+		params.charset = "utf8"
+		params.sign_type = "RSA2"
+		params.sign = nil
+		params.timestamp = futil.nowstr() 
+		params.version = "1.0"
+		params.biz_content = json.encode(biz_content)
+		local sign_str = sort_params(params)
+		local sign = codec.rsa_private_sign_sha256withrsa(sign_str, alipay.priKey)
+		params.sign = codec.base64_encode(sign)
+		logger.debug("params:%s", table.tostring(params))
+		local host = "https://openapi.alipay.com/gateway.do"
+		--[[
+		local ok, res = skynet.call(constants.unique_services.ssl.name, "lua","request", 
+		host, cjson_encode(params))
+		]]
+		local ok, res = skynet.call('.webclient', 'lua', 'request', host, nil, params, false)
+		if not ok then
+			logger.error("https request failed:%s", tostring(res))
+		else
+			logger.debug("https request success:%s", res)
+		end
+	end
+end
 local function generate_order_id()
     local t = skynet.time()
     return string.format("%s",math.floor(t*100))
 end
 
-local function sort_params(params)
-    local p = {}
-    for k, v in pairs(params) do
-        if k ~= 'sign' and v then
-            table.insert(p,k)
-        end
-    end
-    table.sort(p)
-    local str = p[1]..'='..params[p[1]]
-    p[1] = nil
-    for _, k in pairs(p) do
-        str = str..'&'..k..'='..params[k]
-    end
-    return str 
-end
+
 local function handle_weixin_native_order(openid, uid, diamond_info, price_config, args)
     local ec = {
         ok = 0,
@@ -798,6 +842,7 @@ local function main()
     --get_swiftpass_order(nil, nil, {})
     --test_weixin_pay()
 	--wechat_transfer()
+	alipay_auth()
     logger.debug("debug log test")    
     logger.info("info log test")    
     logger.warn("warn log test")    

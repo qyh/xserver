@@ -21,5 +21,5 @@ mysql_conf = [[{
 	"port":3306
 }]]
 websocket_port = 8008
-simpleweb_port = 8000
+simpleweb_port = 8080
 --daemon="../"..name..".pid"
