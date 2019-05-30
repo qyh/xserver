@@ -29,6 +29,7 @@ THE SOFTWARE.
 #include <stdbool.h>
 #include <string.h>
 #include <curl/curl.h>
+#include <md5.h>
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
