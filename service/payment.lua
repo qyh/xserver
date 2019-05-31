@@ -257,6 +257,7 @@ MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCab0bW1tJ5ARhHlAEVcVhCpupaDjkM
 		params.charset = "utf8"
 		params.sign_type = "RSA2"
 		params.sign = nil
+		params.return_url = "http://qyh.hopto.org/alipay_auth"
 		params.timestamp = futil.nowstr() 
 		params.version = "1.0"
 		params.biz_content = json.encode(biz_content)
@@ -842,7 +843,7 @@ local function main()
     --get_swiftpass_order(nil, nil, {})
     --test_weixin_pay()
 	--wechat_transfer()
-	alipay_auth()
+	--alipay_auth()
     logger.debug("debug log test")    
     logger.info("info log test")    
     logger.warn("warn log test")    

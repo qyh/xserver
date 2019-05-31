@@ -27,6 +27,10 @@ local function query_to_table(query)
 	end
 	return res
 end
+local function alipay_auth(method, header, query, body)
+	logger.warn("alipay_auth:%s, %s", query, body)
+	return "success"
+end
 local function wechat_auth_redirect(method, header, query, body)
 	local appid = "wx4d738365325b2dde" 
 	local secret = "d50cff74e3b6bb5f439e89a9813ad3df"  
@@ -83,6 +87,7 @@ local path_handler = {
 	["/wechat_auth_callback"] = wechat_auth_callback,
 	["/wechat_auth_redirect"] = wechat_auth_redirect,
     ["/payment_notify/alipay_trade_precreate"] = alipay_trade_precreate, 
+	["/alipay_auth"] = alipay_auth,
 }
 function request_handler.handle_request(path, method, header, query, body)
     local f = path_handler[path] 
