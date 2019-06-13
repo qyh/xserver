@@ -894,6 +894,15 @@ function futil.getSelectedVals(t, ...)
 	return table.unpack(keys, 1, n)
 end
 
+function futil.str2hex(str)
+    local r = {}
+    for i = 1, #str do
+        table.insert(r, string.format("%02x", str:sub(i, i + 1):byte()))
+    end
+    return table.concat(r)
+end
+
+
 function futil.dayStr2Time(dayStr)
 	local nowDate = os.date("*t")
 	local _, _, hour, min, sec = string.find(dayStr, "(%d+):(%d+):(%d+)")
