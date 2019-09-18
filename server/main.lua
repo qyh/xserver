@@ -26,6 +26,18 @@ skynet.start(function()
 	local mysql_conf = skynet.getenv("mysql_conf")
 	conf = json.decode(mysql_conf)
 	logger.debug("mysql_conf:%s", futil.toStr(conf))
+    local rpc = skynet.newservice("rpc_service")
+    local ok = skynet.call(rpc, "lua", "start", {
+        port = 50600,
+        maxclient = 10000,
+        nodelay = true
+    })
+    logger.info('rpc start :%s', ok)
+    ok = skynet.call(rpc, "lua", "connect", {
+        host = "127.0.0.1",
+        port = 50600
+    })
+    logger.info('rpc connect:%s', ok)
     --skynet.newservice('websocket')
     --skynet.newservice('webserver')
 end)
