@@ -48,9 +48,9 @@ local function request(name, args, response)
 	end
 end
 
-local function send_package(pack)
+local function send_package(fd, pack)
 	local package = string.pack(">s2", codec.base64_encode(pack))
-	socket.write(client_fd, package)
+	socket.write(fd, package)
 end
 
 skynet.register_protocol {
@@ -69,7 +69,7 @@ skynet.register_protocol {
 			local ok, result  = pcall(request, ...)
 			if ok then
 				if result then
-					send_package(result)
+					send_package(fd, result)
 				end
 			else
 				skynet.error(result)
