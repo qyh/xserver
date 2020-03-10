@@ -7,6 +7,7 @@ local json = require "cjson"
 local futil = require "futil"
 local dbconf = require "db.db"
 local mysql_conf = dbconf.mysql
+local mysql_aux = require "mysql_aux"
 function CMD.init()
     
 end
@@ -24,7 +25,7 @@ local function test()
                 for i=1, 100 do 
                     logger.debug("request:%s, db:%s", db, i)
                     local sql = "select version();"
-                    local rv = skynet.call(".mysql_service", "lua", "exec_sql", db, sql)
+                    local rv = mysql_aux[db].exec_sql(sql) 
                     logger.debug("request result:%s %s rv:%s", db, i, table.tostring(rv))
                     skynet.sleep(200)
                 end
