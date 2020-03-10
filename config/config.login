@@ -17,8 +17,11 @@ redis_conf = [[{
 	"db": 0
 }]]
 mysql_conf = [[{
-	"host":"127.0.0.1",
-	"port":3306
+	"host":"192.168.83.178",
+	"port":3306,
+    "user":"root",
+    "password":"root",
+    "database":"imserver"
 }]]
 websocket_port = 8008
 simpleweb_port = 8080
