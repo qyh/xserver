@@ -12,9 +12,7 @@ cpath = "./cservice/?.so;../luaclib/?.so;"
 preload = '../server/preload.lua'
 redis_conf = [[{
 	"host":"127.0.0.1",
-	"port": 6379,
-	"auth": "",
-	"db": 0
+	"port": 6379
 }]]
 mysql_conf = [[{
 	"host":"192.168.83.178",

@@ -1,12 +1,13 @@
 local skynet = require "skynet"
-local redis = require "redis"
-local server_config = require "glzp.server_config"
+local redis = require "skynet.db.redis"
+local json = require "cjson"
 local logger = require "logger"
 local futil = require "futil"
 local const = require "const"
-require "glzp.tostring"
+local redis_conf = skynet.getenv("redis_conf") 
+require "tostring"
 require "skynet.manager"
-local redis_config = server_config['redisConfig']
+local redis_config = json.decode(redis_conf) 
 local CMD = {}
 local db = nil
 
