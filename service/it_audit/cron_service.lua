@@ -9,6 +9,9 @@ local dbconf = require "db.db"
 local mysql_conf = dbconf.mysql
 local mysql_aux = require "mysql_aux"
 local redis = require "pubsub"
+
+
+
 function CMD.init()
     
 end
