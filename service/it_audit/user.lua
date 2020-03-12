@@ -9,10 +9,13 @@ local dbconf = require "db.db"
 local mysql_conf = dbconf.mysql
 local mysql_aux = require "mysql_aux"
 local redis = require "pubsub"
-local prefix = "audit_user"
+local const = require "const"
+local prefix = const.redis_key.audit_user 
 
 local number_key = {
-    
+    "gameCardRecharge",     --对战卡充值量
+    "goldCoinRecharge",     --金币充值量
+    "rechargeCount",        --充值次数
 }
 
 local fs = {

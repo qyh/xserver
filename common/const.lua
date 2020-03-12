@@ -13,6 +13,10 @@ const.error_code = {
     http_data_error = 2,
 }
 
+const.redis_key = {
+    audit_user = "audit_user",
+}
+
 const.pubsubChannel = {
 	pub_test = "pub_test",
 	WinChallengeConfigUpdate = "WinChallengeConfigUpdate",

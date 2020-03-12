@@ -9,6 +9,7 @@ local dbconf = require "db.db"
 local mysql_conf = dbconf.mysql
 local mysql_aux = require "mysql_aux"
 local redis = require "pubsub"
+local user = require "user"
 
 local audit = {}
 
@@ -142,6 +143,66 @@ end
 
 function audit.audit_recharge()
     logger.debug("audit.audit_recharge")
+    local rank_user = require "recharge_rank"
+    local order_tables = {"OnlinePayNotify2017", "OnlinePayNotify2018", "OnlinePayNotify2019"}
+    --local order_tables = {"OnlinePayNotify_tmptest"}
+    local sql = "select * from Mall"
+    local mall_info = {}
+    local rv = mysql_aux["2019_118"].exec_sql(sql)
+    if not (rv and next(rv)) then
+        logger.err("get mall info fail")
+        return
+    end
+    for k, v in pairs(rv) do
+        mall_info[v.ID] = v
+    end
+    logger.debug("get mall info success")
+    local lastID = 0
+    local begin_t = os.time()
+    for k, tbname in pairs(order_tables) do
+        logger.debug('audit_recharge deal with table:%s', tbname)
+        while true do
+            local _t = os.time()
+            logger.debug('audit_recharge query from ID:%s,table:%s', lastID, tbname)
+            local sql = string.format("select * from %s where ID > %s order by ID asc limit 10000",
+            tbname, lastID) 
+            local res = mysql_aux.localhost.exec_sql(sql)
+            if not (res and next(res)) then
+                break
+            else
+                for k, v in pairs(res) do
+                    if rank_user[v.userID] then
+                        local mall_detail = mall_info[v.mallID]
+                        local user_info = user.get_user_info(v.userID) or {}
+                        user_info.gameCardRecharge = user_info.gameCardRecharge or 0 
+                        user_info.rechargeCount = user_info.rechargeCount or 0
+                        user_info.goldCoinRecharge = user_info.goldCoinRecharge or 0
+                        if mall_detail then
+                            local gain_goods = mall_detail.gainGoods
+                            local arr = futil.split(gain_goods, "=")
+                            if #arr == 2 then
+                                local goodsID = tonumber(arr[1])
+                                local goodsCount = tonumber(arr[2])
+                                if goodsID == 107 then
+                                    user_info.gameCardRecharge = user_info.gameCardRecharge + (goodsCount * v.amount)
+                                elseif goodsID == 0 then
+                                    user_info.goldCoinRecharge = user_info.goldCoinRecharge + (goodsCount * v.amount)
+                                end
+                                user.set_user_info(v.userID, user_info)
+                            end
+                        end
+                    end
+                end
+                lastID = res[#res].ID
+                logger.debug("update lastID to:%s", lastID)
+            end
+            logger.debug('audit_recharge deal with 10000 row take time:%s sec', os.time() - _t)
+            skynet.sleep(100)
+        end
+        logger.debug('deal with table:%s end', tbname)
+    end
+    local end_t = os.time()
+    logger.debug("audit_recharge done !! take time:%s sec", end_t - begin_t)
 end
 
 local function run()
