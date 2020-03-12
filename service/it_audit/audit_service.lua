@@ -211,6 +211,85 @@ end
 
 function audit.audit_active_day()
     logger.debug("audit.audit_active_day")
+    local begin_time = futil.getTimeByDate("2017-07-01 00:00:00")
+    local end_time = futil.getTimeByDate("2020-01-01 00:00:00")
+    local prefix = "UserLog_"
+    local val_time = begin_time
+    local rank_user = require "recharge_rank"
+    while true do
+        local tname = prefix..futil.monthStr(val_time, "_")
+        local db = nil
+        for k, conf in pairs(mysql_conf) do
+            local dbname = conf.database
+            if dbname == 'Zipai' then
+                if is_table_exists(k, dbname, tname) then
+                    logger.debug('table:%s exists in %s', dbname.."."..tname, k)
+                    db = k       
+                    break
+                end
+            end
+        end
+        if db then
+            logger.debug("do query in :%s,%s", db, tname)
+            local lastID = 0
+            local count = 10000
+            local active_counter = {}
+            while true do
+                local sql = string.format("select * from %s where ID > %s order by ID asc limit %s", tname, lastID, count)
+                local _t = os.time()
+                local rv = mysql_aux[db].exec_sql(sql)
+                if rv.badresult then
+                    logger.warn("table not exists maybe:%s %s", tname, db)
+                    break
+                end
+                if rv and next(rv) then
+                    logger.debug("query %s row %s.%s fromID:%s to %s take time:%s sec", count, db, tname, lastID, rv[#rv].ID, os.time() - _t)
+                    -- do calc active day
+                    for k, v in pairs(rv) do
+                        if rank_user[v.userID] then
+                            user_counter = active_counter[v.userID] or {}
+                            local loginTime = futil.getTimeByDate(v.time)
+                            local dayStr = futil.dayStr(loginTime)
+                            if not user_counter[dayStr] then
+                                user_counter[dayStr] = true
+                                active_counter[v.userID] = user_counter
+                                --logger.debug("user_counter:%s", table.tostring(user_counter))
+                                --logger.debug("active_counter:%s", table.tostring(active_counter))
+                            end
+                        end
+                    end
+                    lastID = rv[#rv].ID
+                else
+                    logger.warn("no data found on table:%s %s", tname, db)
+                    break
+                end
+                skynet.sleep(100)
+            end
+            --更新本月活跃天数到redis
+            for userID, amount in pairs(rank_user) do
+                local num = 0
+                local user_counter = active_counter[userID] or {}
+                for k, v in pairs(user_counter) do
+                    num = num + 1
+                end
+                if num > 0 then
+                    local user_info = user.get_user_info(userID) or {}
+                    local update_info = {}
+                    update_info.activeDay = user_info.activeDay or 0
+                    update_info.activeDay = update_info.activeDay + num
+                    user.set_user_info(userID, update_info)
+                    logger.debug("add user:%s active day:%s", userID, num)
+                end
+            end
+        else
+            logger.err("table not exists:%s", tname)
+        end
+        val_time = futil.get_next_month(val_time)
+        if val_time >= end_time then
+            break
+        end
+    end
+    logger.debug("calc_active_day done !")
 end
 
 function audit.audit_game_win_lose()
