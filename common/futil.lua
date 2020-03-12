@@ -35,9 +35,7 @@ end
 function futil.nowstr(now)
 	return os.date("%Y-%m-%d %H:%M:%S", now or os.time())
 end
-function futil.dayStr(now)
-	return os.date("%Y-%m-%d", now or os.time())
-end
+
 --a shorter name
 function futil.now()
 	return os.date("%Y-%m-%d %H:%M:%S", os.time())
