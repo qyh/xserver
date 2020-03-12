@@ -909,5 +909,51 @@ function futil.dayStr2Time(dayStr)
 	local day_time = os.time {year = nowDate.year, month = nowDate.month, day = nowDate.day, hour = hour, min = min, sec = sec}
 	return day_time
 end
+function futil.get_last_month(cur_t)
+    local month_str = os.date("%Y%m", cur_t or os.time())
+    local last_t = cur_t or os.time()
+    while true do
+        last_t = last_t - (28 * 86400)
+        local last_month_str = os.date("%Y%m", last_t)
+        if month_str ~= last_month_str then
+            return last_t
+        end
+    end
+    return last_t
+end
+
+function futil.get_next_month(cur_t)
+    local month_str = os.date("%Y%m", cur_t or os.time())
+    local next_t = cur_t or os.time()
+    while true do
+        next_t = next_t + (28 * 86400)
+        local last_month_str = os.date("%Y%m", next_t)
+        if month_str ~= last_month_str then
+            return next_t
+        end
+    end
+    return next_t
+end
+-- t is return by os.time()
+function futil.timeStr(t)
+	return os.date("%Y%m%d%H%M%S", t or os.time())
+end
+
+-- t is return by os.time()
+function futil.dayStr(t, s)
+	if not s then
+		return os.date("%Y%m%d", t or os.time())
+	else
+		return os.date("%Y"..s.."%m"..s.."%d", t or os.time())
+	end
+end
+
+function futil.monthStr(t, s)
+	if not s then
+		return os.date("%Y%m", t or os.time())
+	else
+		return os.date("%Y"..s.."%m", t or os.time())
+	end
+end
 
 return futil

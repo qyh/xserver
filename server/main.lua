@@ -18,6 +18,7 @@ skynet.start(function()
     logger.debug("db.db:%s", futil.toStr(dbconf))
     skynet.newservice("mysql_service")
     skynet.newservice("cron_service")
+    --[[
     local rpc = skynet.newservice("rpc_service")
     local ok = skynet.call(rpc, "lua", "start", {
         port = 50600,
@@ -30,4 +31,5 @@ skynet.start(function()
         port = 50600
     })
     logger.info('rpc connect:%s', ok)
+    ]]
 end)

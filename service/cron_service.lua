@@ -106,9 +106,53 @@ local function calc_rank()
     logger.debug("save to file take time:%s", os.time() - begin_t)
 end
 
+local function is_table_exists(conn, dbname, tname)
+    local sql = string.format([[SELECT DISTINCT t.table_name, n.SCHEMA_NAME FROM information_schema.TABLES t, 
+        information_schema.SCHEMATA n WHERE t.table_name = '%s' AND n.SCHEMA_NAME = '%s';]], tname, dbname)
+
+    local rv = mysql_aux[conn].exec_sql(sql)
+    if not (rv and next(rv)) then
+        return false
+    else
+        return true
+    end
+end
+
+local function calc_active_day(userID)
+    --local rechargeRank = require "recharge_rank"
+    local begin_time = futil.getTimeByDate("2017-01-01 00:00:00")
+    local end_time = futil.getTimeByDate("2020-01-01 00:00:00")
+    local prefix = "UserLog_"
+    local val_time = begin_time
+    while true do
+        local tname = prefix..futil.monthStr(val_time, "_")
+        local db = nil
+        for k, conf in pairs(mysql_conf) do
+            local dbname = conf.database
+            if dbname == 'Zipai' then
+                if is_table_exists(k, dbname, tname) then
+                    logger.debug('table:%s exists in %s', dbname.."."..tname, k)
+                    db = k       
+                    break
+                end
+            end
+        end
+        if db then
+            logger.debug("do query in :%s,%s", db, tname)
+        else
+            logger.err("table not exists:%s", tname)
+        end
+        val_time = futil.get_next_month(val_time)
+        if val_time >= end_time then
+            break
+        end
+        skynet.sleep(100)
+    end
+    logger.debug("calc_active_day done !")
+end
+
 local function export_data()
-    calc_rank()
-    --save_rank_to_file()
+    calc_active_day()
 end
 
 
