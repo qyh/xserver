@@ -10,6 +10,7 @@ local mysql_conf = dbconf.mysql
 local mysql_aux = require "mysql_aux"
 local redis = require "pubsub"
 local user = require "user"
+local const = require "const"
 
 local audit = {}
 
@@ -131,6 +132,81 @@ local function calc_active_day(userID)
         skynet.sleep(100)
     end
     logger.debug("calc_active_day done !")
+end
+
+local function clear_audit_user()
+    local rank_user = require "recharge_rank"
+    for userID, amount in pairs(rank_user) do
+        local rkey = string.format("%s:%s",const.redis_key.audit_user, userID)
+        redis:del(rkey)
+    end
+end
+
+local function get_first_recharge_time(userID)
+    local order_tables = {"OnlinePayNotify2017", "OnlinePayNotify2018", "OnlinePayNotify2019"}
+    for k, tbname in pairs(order_tables) do
+        local sql = string.format("select * from %s where userID=%s order by ID asc limit 1",
+        tbname, userID)
+        local rv = mysql_aux["localhost"].exec_sql(sql)
+        if rv and next(rv) then
+            local order = rv[1]
+            return order.notifyTime
+        end
+    end
+    return ""
+end
+
+local function get_last_recharge_time(userID)
+    local order_tables = {"OnlinePayNotify2019", "OnlinePayNotify2018", "OnlinePayNotify2017"}
+    for k, tbname in pairs(order_tables) do
+        local sql = string.format("select * from %s where userID=%s order by ID desc limit 1",
+        tbname, userID)
+        local rv = mysql_aux["localhost"].exec_sql(sql)
+        if rv and next(rv) then
+            local order = rv[1]
+            return order.notifyTime
+        end
+    end
+    return ""
+end
+
+function audit.audit_base_info()
+    logger.debug("writing user base info")
+    local rank_user = require "recharge_rank"
+    for userID, amount in pairs(rank_user) do
+        local rkey = string.format("%s:%s",const.redis_key.audit_user, userID)
+        local sql = string.format("select * from User where ID=%s", userID)
+        local rv = mysql_aux["2019_118"].exec_sql(sql)
+        if not (rv and next(rv)) then
+            logger.err("get user base info fail:%s", userID)
+        else
+            sql = string.format("select * from Account where userID=%s", userID)
+            local acc_info = mysql_aux["2019_118"].exec_sql(sql)
+            if not (acc_info and next(acc_info)) then
+                logger.err("get user account info fail:%s", userID)
+                acc_info = {goldCoin = 0}
+            else
+                acc_info = acc_info[1]
+            end
+            local info = rv[1]
+            local user_info = {}
+            user_info.code = info.code
+            user_info.userID = userID
+            user_info.nickName = info.nickName
+            user_info.userName = info.userName
+            user_info.regTime = info.regTime
+            user_info.goldCoin = acc_info.goldCoin
+            user_info.level = info.level
+            user_info.totalAmount = amount
+            user_info.lastLoginTime = info.recentLoginTime
+            user_info.firstRechargeTime = get_first_recharge_time(userID)
+            user_info.lastRechargeTime = get_last_recharge_time(userID)
+            user.set_user_info(userID, user_info)
+            logger.debug("write user base info done:%s", userID)
+        end
+        skynet.sleep(10)
+    end
+    logger.info("audit_base_info ALL DONE !!")
 end
 
 function audit.audit_active_day()
