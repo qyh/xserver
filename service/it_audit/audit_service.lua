@@ -177,6 +177,7 @@ function audit.audit_recharge()
                         user_info.gameCardRecharge = user_info.gameCardRecharge or 0 
                         user_info.rechargeCount = user_info.rechargeCount or 0
                         user_info.goldCoinRecharge = user_info.goldCoinRecharge or 0
+                        user_info.rechargeCount = user_info.rechargeCount + 1
                         if mall_detail then
                             local gain_goods = mall_detail.gainGoods
                             local arr = futil.split(gain_goods, "=")
@@ -186,6 +187,7 @@ function audit.audit_recharge()
                                 if goodsID == 107 then
                                     user_info.gameCardRecharge = user_info.gameCardRecharge + (goodsCount * v.amount)
                                 elseif goodsID == 0 then
+                                    --logger.debug("add goldCoin userID:%s:%s", v.userID, goodsCount)
                                     user_info.goldCoinRecharge = user_info.goldCoinRecharge + (goodsCount * v.amount)
                                 end
                                 user.set_user_info(v.userID, user_info)
@@ -213,9 +215,9 @@ local function run()
     end
     if audit[audit_job] then
         local f = audit[audit_job]
-        local ok = xpcall(f, futil.handle_err)
+        local ok, err = xpcall(f, futil.handle_err)
         if not ok then
-            logger.err("exec job fail:%s", audit_job)
+            logger.err("exec job fail:%s:%s", audit_job, tostring(err))
         end
     else
         logger.err("no nob handle found:%s", audit_job)

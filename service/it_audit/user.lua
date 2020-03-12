@@ -42,7 +42,7 @@ local user = {}
 
 function user.get_user_info(userID)
     local rds_key = string.format("%s:%s", prefix, userID)
-    local rs = redis:hgetall(rkey)
+    local rs = redis:hgetall(rds_key)
     if not (rs and next(rs)) then
         return nil
     end
