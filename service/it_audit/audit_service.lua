@@ -530,7 +530,7 @@ function audit.audit_goldcoin_log()
     local outfile = io.open(filename, "w")
     local title = format_output_string("账号ID")..sep..format_output_string("名称")..sep..format_output_string("消耗时间")..sep..format_output_string("消耗币种")..sep..format_output_string("消耗数量").."\n"
     outfile:write(title)
-    for i=1, 1 do
+    for i=1, 100 do
         local u = tmp[i]
         if u then
             local userID = u.userID
