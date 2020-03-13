@@ -15,4 +15,4 @@ redis_conf = [[{
 	"port": 6379
 }]]
 audit_job = name 
---daemon="../run/"..name..".pid"
+daemon="../run/"..name..".pid"

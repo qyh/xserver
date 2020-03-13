@@ -294,6 +294,75 @@ end
 
 function audit.audit_game_win_lose()
     logger.debug("audit.audit_game_win_lose")
+    local table_prefix = {"GameUserInfoLog", "MatchUserInfoLog", "NewRoomSelfUserInfoLog"}
+    local begin_time = futil.getTimeByDate("2017-03-05 00:00:00")
+    local end_time = futil.getTimeByDate("2020-01-01 00:00:00")
+    local rank_user = require "recharge_rank" 
+    if not (rank_user and next(rank_user)) then
+        logger.err("rank user empty")
+    end
+    for userID, amount in pairs(rank_user) do
+        local winCount = 0
+        local loseCount = 0
+        for _, prefix in pairs(table_prefix) do
+            local val_time = begin_time
+            while true do
+                local tname = string.format("%s_%s", prefix, futil.dayStr(val_time, "_"))
+                local db = nil
+                for k, conf in pairs(mysql_conf) do
+                    local dbname = conf.database
+                    if dbname == 'GameLog' then
+                        if is_table_exists(k, dbname, tname) then
+                            logger.debug('table:%s exists in %s', dbname.."."..tname, k)
+                            db = k       
+                            break
+                        end
+                    end
+                end
+                if db then
+                    logger.debug("query user:%s from table %s.%s", userID, db, tname)
+                    local lastID = 0
+                    local count = 10000
+                    local _t = os.time()
+                    while true do
+                        local sql = string.format("select * from %s where userID=%s and ID > %s order by ID asc limit %s", tname, userID, lastID, count)
+                        local rv = mysql_aux[db].exec_sql(sql)
+                        if rv.badresult then
+                            logger.err("table may not exists:%s.%s", db, tname)
+                            break
+                        end
+                        if rv and next(rv) then
+                            for _, gameLog in pairs(rv) do
+                                if gameLog.state == '赢' then
+                                    winCount = winCount + 1
+                                elseif gameLog.state == '输' then
+                                    loseCount = loseCount + 1
+                                end
+                            end
+                            lastID = rv[#rv].ID
+                        else
+                            break
+                        end
+                    end
+                    logger.debug("query user:%s from table:%s done, winCount:%s, loseCount:%s, take time:%s sec", userID, tname, winCount, loseCount, os.time() - _t)
+                else
+                    logger.err("table %s not exists", tname)
+                end
+                --move to next week
+                val_time = val_time + 86400*7
+                if val_time > end_time then
+                    break
+                end
+            end
+        end
+        logger.debug("audit user:%s win lose done, winCount:%s, loseCount:%s", userID, winCount, loseCount)
+        local update_info = {
+            winCount = winCount,
+            loseCount = loseCount,
+        }
+        user.set_user_info(userID, update_info)
+    end
+    logger.debug("audit_game_win_lost done !!")
 end
 
 function audit.audit_recharge()
