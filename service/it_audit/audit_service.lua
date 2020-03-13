@@ -523,26 +523,27 @@ function audit.audit_goldcoin_log()
     end)
     local begin_time = futil.getTimeByDate("2017-01-01 00:00:00")
     local end_time = futil.getTimeByDate("2020-01-01 00:00:00")
-    local table_prefix = "GoldCoinLog"
+    local table_prefix = {"GoldCoinLog","RoomCardLog"}
     --分隔符
     local sep = " | "
+    local filename = string.format("../out/goldCoin_roomCard_log.txt") 
+    local outfile = io.open(filename, "w")
+    local title = format_output_string("账号ID")..sep..format_output_string("名称")..sep..format_output_string("消耗时间")..sep..format_output_string("消耗币种")..sep..format_output_string("消耗数量").."\n"
+    outfile:write(title)
     for i=1, 1 do
         local u = tmp[i]
         if u then
             local userID = u.userID
-            local filename = string.format("../out/goldCoinLog_%s.txt", userID) 
-            local outfile = io.open(filename, "w")
             if not outfile then
                 logger.err("open out file fail:%s", filename)
                 break
             end
-            local title = format_output_string("账号ID")..sep..format_output_string("名称")..sep..format_output_string("消耗时间")..sep..format_output_string("消耗币种")..sep..format_output_string("消耗数量").."\n"
-            outfile:write(title)
             logger.debug("begin export goldcoin log userID:%s, amount:%s", u.userID, u.amount)
             local sql = string.format("select * from User where ID=%s", userID)
             local db_user = mysql_aux['2019_118'].exec_sql(sql)
             if db_user.badresult then
                 logger.err("get user info fail from db:%s,%s", userID, futil.toStr(db_user))
+                db_user = {code = "null"}
             else
                 if not (db_user and next(db_user)) then
                     db_user = {code = "null"}
@@ -552,42 +553,50 @@ function audit.audit_goldcoin_log()
             end
             local val_time = begin_time
             while true do
-                local tname = string.format("%s_%s", table_prefix, futil.monthStr(val_time, "_"))
-                local db = nil
-                for k, conf in pairs(mysql_conf) do
-                    local dbname = conf.database
-                    if dbname == 'Zipai' and conf.type == 1 then
-                        if is_table_exists(k, dbname, tname) then
-                            logger.debug('table:%s exists in %s', dbname.."."..tname, k)
-                            db = k       
-                            break
+                for _, prefix in pairs(table_prefix) do
+                    local tname = string.format("%s_%s", prefix, futil.monthStr(val_time, "_"))
+                    local db = nil
+                    for k, conf in pairs(mysql_conf) do
+                        local dbname = conf.database
+                        if dbname == 'Zipai' and conf.type == 1 then
+                            if is_table_exists(k, dbname, tname) then
+                                logger.debug('table:%s exists in %s', dbname.."."..tname, k)
+                                db = k       
+                                break
+                            end
                         end
                     end
-                end
-                if db then
-                    logger.debug("query user:%s gold coin log from %s.%s", userID, db, tname)
-                    local lastID = 0
-                    local count = 10000
-                    while true do
-                        local sql = string.format("select * from %s where userID=%s and ID > %s limit %s", tname, userID, lastID, count)
-                        local rv = mysql_aux[db].exec_sql(sql)
-                        if rv.badresult then
-                            logger.err("table %s.%s may not exists skip", db, tname)
-                            break
-                        end
-                        if rv and next(rv) then
-                            --deal with gold coin log
-                            for k, v in pairs(rv) do
-                                if v.changeCurrency < 0 then
-                                    local txt = format_output_string(tostring(db_user.code))..sep..format_output_string(v.nickName)..sep..format_output_string(v.time)..sep..format_output_string("金币")..sep..format_output_string(tostring(v.changeCurrency)).."\n"
-                                    logger.debug("write to file:%s", txt)
-                                    outfile:write(txt)
-                                end
-                                lastID = rv[#rv].ID
+                    if db then
+                        logger.debug("query user:%s gold coin log from %s.%s", userID, db, tname)
+                        local lastID = 0
+                        local count = 10000
+                        while true do
+                            local sql = string.format("select * from %s where userID=%s and ID > %s order by ID asc limit %s", tname, userID, lastID, count)
+                            logger.debug("query %s.%s from ID:%s", db, tname, lastID)
+                            local rv = mysql_aux[db].exec_sql(sql)
+                            if rv.badresult then
+                                logger.err("table %s.%s may not exists skip", db, tname)
+                                break
                             end
-                        else
-                            logger.debug("query user:%s from table %s.%s done", userID, db, tname)
-                            break
+                            if rv and next(rv) then
+                                --deal with gold coin log
+                                for k, v in pairs(rv) do
+                                    if v.changeCurrency < 0 and (v.goodsID == 107 or v.goodsID == 0) then
+                                        local goodsName = "金币"
+                                        if v.goodsID == 107 then
+                                            goodsName = "对战卡"
+                                        end
+                                        local txt = format_output_string(tostring(db_user.code))..sep..format_output_string(v.nickName)..sep..format_output_string(v.time)..sep..format_output_string(goodsName)..sep..format_output_string(tostring(v.changeCurrency)).."\n"
+                                        --logger.debug("write to file:%s", txt)
+                                        outfile:write(txt)
+                                    end
+                                    lastID = rv[#rv].ID
+                                end
+                            else
+                                logger.debug("query user:%s from table %s.%s done", userID, db, tname)
+                                break
+                            end
+                            skynet.sleep(100)
                         end
                     end
                 end
@@ -597,9 +606,9 @@ function audit.audit_goldcoin_log()
                 end
             end
             outfile:flush()
-            outfile:close()
         end
     end
+    outfile:close()
 end
 
 local function run()
