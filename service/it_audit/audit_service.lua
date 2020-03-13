@@ -345,7 +345,11 @@ function audit.audit_recharge()
                                     --logger.debug("add goldCoin userID:%s:%s", v.userID, goodsCount)
                                     user_info.goldCoinRecharge = user_info.goldCoinRecharge + (goodsCount * v.amount)
                                 end
-                                user.set_user_info(v.userID, user_info)
+                                local update_info = {}
+                                update_info.gameCardRecharge = user_info.gameCardRecharge
+                                update_info.rechargeCount = user_info.rechargeCount
+                                update_info.goldCoinRecharge = user_info.goldCoinRecharge
+                                user.set_user_info(v.userID, update_info)
                             end
                         end
                     end
