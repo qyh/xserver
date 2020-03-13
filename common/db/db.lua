@@ -8,6 +8,7 @@ conf.mysql = {
         database = "Zipai",
         user = "root",
         password = "123",
+        type = 0,
     },
     localhost = {
         host = "192.168.82.101",
@@ -15,6 +16,7 @@ conf.mysql = {
         database = "Zipai",
         user = "root",
         password = "123",
+        type = 0,
     },
     ["2017_118"] = {
         host = "47.112.252.58",
@@ -22,6 +24,7 @@ conf.mysql = {
         database = "Zipai",
         user = "qyh_2019_db_user",
         password = "qS6.WaQr0nZv0*&G",
+        type = 1,
     },
     ["2017_115"] = {
         host = "47.115.47.54",
@@ -29,6 +32,7 @@ conf.mysql = {
         database = "GameLog",
         user = "qyh_2019_db_user",
         password = "qS6.WaQr0nZv0*&G",
+        type = 1,
     },
     ["2018_118"] = {
         host = "8.129.15.148",
@@ -36,6 +40,7 @@ conf.mysql = {
         database = "Zipai",
         user = "qyh_2019_db_user",
         password = "qS6.WaQr0nZv0*&G",
+        type = 1,
     },
     ["2018_115"] = {
         host = "47.115.124.181",
@@ -43,6 +48,7 @@ conf.mysql = {
         database = "GameLog",
         user = "qyh_2019_db_user",
         password = "qS6.WaQr0nZv0*&G",
+        type = 1,
     },
     ["2019_118"] = {
         host = "120.79.9.214",
@@ -50,6 +56,7 @@ conf.mysql = {
         database = "Zipai",
         user = "qyh_2019_db_user",
         password = "qS6.WaQr0nZv0*&G",
+        type = 1,
     },
     ["2019_115"] = {
         host = "120.77.178.144",
@@ -57,6 +64,7 @@ conf.mysql = {
         database = "GameLog",
         user = "qyh_2019_db_user",
         password = "qS6.WaQr0nZv0*&G",
+        type = 1,
     },
 }
 conf.mysqldb_name = {}
