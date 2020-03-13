@@ -435,6 +435,33 @@ function audit.audit_recharge()
     logger.debug("audit_recharge done !! take time:%s sec", end_t - begin_t)
 end
 
+--从redis导出第一张表
+function audit.audit_export_1()
+    local rank_user = require "recharge_rank"
+    if not (rank_user and next(rank_user)) then
+        logger.err("rank_user not found")
+        return
+    end
+    local failCount = 0
+    local succCount = 0
+    for userID, n in pairs(rank_user) do
+        local rdsKey = string.format("%s:%s", const.redis_key.audit_user, userID)
+        local user_info = user.get_user_info(userID) 
+        if user_info then
+            local sql = mysql_aux.get_insert_sql("audit_export_1", user_info)
+            local rv = mysql_aux['export'].exec_sql(sql)
+            if rv.badresult then
+                logger.err("export user:%s fail:%s, sql:%s", userID, futil.toStr(rv), sql)
+                failCount = failCount + 1
+            else
+                logger.debug("export user:%s success", userID)
+                succCount = succCount + 1
+            end
+        end
+    end
+    logger.debug("audit export 1 DONE ,succ:%s, fail:%s", succCount, failCount)
+end
+
 local function run()
     local audit_job = skynet.getenv("audit_job")
     if not audit_job then

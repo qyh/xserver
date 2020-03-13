@@ -2,10 +2,14 @@ local service = ".mysql_service"
 local logger = require "logger"
 local skynet = require "skynet"
 local dbconf = require "db.db"
+local mysql = require "skynet.db.mysql"
 
 local mysql_conf = dbconf.mysql
 local mysql_aux = {}
 
+local mqv = function(v)
+    return mysql.quote_sql_str(v)
+end
 
 function mysql_aux.exec_sql(dbname, sql)
     if not mysql_aux[dbname] then

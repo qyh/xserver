@@ -2,6 +2,13 @@ local conf = {}
 
 
 conf.mysql = {
+    export = {
+        host = "192.168.82.138",
+        port = "3306",
+        database = "Zipai",
+        user = "root",
+        password = "123",
+    },
     localhost = {
         host = "192.168.82.101",
         port = "3306",

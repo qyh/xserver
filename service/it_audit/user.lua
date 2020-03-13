@@ -16,6 +16,17 @@ local number_key = {
     "gameCardRecharge",     --对战卡充值量
     "goldCoinRecharge",     --金币充值量
     "rechargeCount",        --充值次数
+    "userID",
+    "code",
+    "goldCoin",             --目前金币数
+    "level",                --游戏等级
+    "rechargeCount",        --充值次数
+    "totalAmount",          --累计充值金额(元)
+    "activeDay",            --活跌天数
+    "winCount",             --游戏胜数
+    "loseCount",            --游戏负数
+    "gameCardRecharge",     --对战卡充值量
+    "goldCoinRecharge",     --金币充值量
 }
 
 local fs = {
