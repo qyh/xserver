@@ -15,6 +15,8 @@ const.error_code = {
 
 const.redis_key = {
     audit_user = "audit_user",
+    game_win = "game_win",
+    game_lose = "game_lose",
 }
 
 const.pubsubChannel = {
