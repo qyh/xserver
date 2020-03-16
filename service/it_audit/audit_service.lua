@@ -621,9 +621,23 @@ local function run()
     end
 end
 
+function CMD.audit_msg(session, ch, msg)
+    logger.debug("recv audit_msg:%s,%s", ch, msg)
+    if ch == const.pubsubChannel.ch_audit then
+        logger.debug("audit_msg query db test start")
+        local rv = mysql_aux[msg].exec_sql("select version()")
+        if rv and next(rv) then
+            logger.debug("rv:%s", futil.toStr(rv))
+            logger.debug("audit_msg query db test success")
+        else
+            logger.err("audit_msg query db test fail")
+        end
+    end
+end
 
 skynet.init(function()
     CMD.init()
+    redis.sub(const.pubsubChannel.ch_audit, "audit_msg")
     skynet.timeout(200, run)
 end)
 

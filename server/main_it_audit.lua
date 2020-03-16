@@ -6,6 +6,7 @@ local dbconf = require "db.db"
 skynet.start(function()
     skynet.newservice("logservice")
 	skynet.uniqueservice('snowflake')
+	skynet.uniqueservice('redis_pubsub')	
     logger.debug("db.db:%s", futil.toStr(dbconf))
     skynet.newservice("mysql_service")
     skynet.newservice("audit_service")

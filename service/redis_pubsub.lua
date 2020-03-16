@@ -35,6 +35,7 @@ function CMD.command(cmd, ...)
 end
 
 function CMD.sub(channel, service, hook)
+	logger.debug('redis_pubsub recv sub:%s,%s,%s',channel, service, hook)
 	if not (channel and service and hook) then
 		logger.err('redis_pubsub failed:%s,%s,%s',channel, service, hook)
 		return false

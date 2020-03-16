@@ -25,5 +25,6 @@ const.pubsubChannel = {
     ch_release_lock = 'ch_release_lock',
     ch_new_challenge_match = "ch_new_challenge_match",
     ch_new_challenge_sign_in = "ch_new_challenge_sign_in",
+    ch_audit = "ch_audit",
 }
 return const
