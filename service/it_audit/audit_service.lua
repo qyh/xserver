@@ -388,6 +388,74 @@ function audit.audit_game_win_lose_2()
     
     logger.debug("audit_game_win_lost done !!")
 end
+--牌局排行：每天top100 
+function audit.audit_game_record_rank()
+    logger.debug("audit.audit_game_record_rank")
+    local table_prefix = {"GameUserInfoLog", "MatchUserInfoLog", "NewRoomSelfUserInfoLog"}
+    local begin_time = futil.getTimeByDate("2017-03-05 00:00:00")
+    local end_time = futil.getTimeByDate("2020-01-01 00:00:00")
+    
+    --for _, prefix in pairs(table_prefix) do
+    local val_time = begin_time
+    while true do
+        for _, prefix in pairs(table_prefix) do
+            local tname = string.format("%s_%s", prefix, futil.dayStr(val_time, "_"))
+            local db = nil
+            for k, conf in pairs(mysql_conf) do
+                local dbname = conf.database
+                if dbname == 'GameLog' and conf.type == 1 then
+                    if is_table_exists(k, dbname, tname) then
+                        logger.debug('table:%s exists in %s', dbname.."."..tname, k)
+                        db = k       
+                        break
+                    end
+                end
+            end
+            if db then
+                logger.debug("query from table %s.%s", db, tname)
+                local cursor = string.format("%s:%s", const.redis_key.game_log_cursor, tname)
+                local lastID = redis:get(cursor) or 0
+                local count = 10000
+                local _t = os.time()
+                while true do
+                    logger.debug("query table:%s from ID:%s", db.."."..tname, lastID)
+                    local _t = os.time()
+                    local sql = string.format("select * from %s where ID > %s and userID >= 5000 order by ID asc limit %s", tname, lastID, count)
+                    local rv = mysql_aux[db].exec_sql(sql)
+                    if rv.badresult then
+                        logger.err("table may not exists:%s.%s", db, tname)
+                        break
+                    end
+                    if rv and next(rv) then
+                        for _, gameLog in pairs(rv) do
+                            local logTime = futil.getTimeByDate(gameLog.startTime)
+                            local incrKey = string.format("%s:%s", const.redis_key.game_record_rank, futil.dayStr(logTime))
+                            redis:zincrby(incrKey, 1, gameLog.userID)
+                            --更新游标
+                            redis:set(cursor, gameLog.ID)
+                        end
+                        lastID = rv[#rv].ID
+                        logger.debug("update lastID to:%s", lastID)
+                    else
+                        break
+                    end
+                    logger.debug("query 10000 row take time:%s", os.time() - _t)
+                    skynet.sleep(100)
+                end
+            else
+                logger.err("table %s not exists", tname)
+            end
+        end
+        --move to next week
+        val_time = val_time + 86400*7
+        if val_time > end_time then
+            break
+        end
+    end
+    --end
+    
+    logger.debug("audit_game_record_rank done !!")
+end
 
 function audit.audit_game_win_lose()
     logger.debug("audit.audit_game_win_lose")
