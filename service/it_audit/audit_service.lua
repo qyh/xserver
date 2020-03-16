@@ -210,36 +210,23 @@ function audit.audit_base_info()
 end
 
 function audit.audit_test()
-    logger.debug("audit.audit_active_day")
-    local begin_time = futil.getTimeByDate("2017-07-01 00:00:00")
-    local end_time = futil.getTimeByDate("2020-01-01 00:00:00")
-    local prefix = "UserLog_"
-    local val_time = begin_time
-    local rank_user = require "recharge_rank"
-    while true do
-        local tname = prefix..futil.monthStr(val_time, "_")
-        local db = nil
-        for k, conf in pairs(mysql_conf) do
-            local dbname = conf.database
-            if dbname == 'Zipai' then
-                if is_table_exists(k, dbname, tname) then
-                    logger.debug('table:%s exists in %s', dbname.."."..tname, k)
-                    db = k       
-                    break
-                end
-            end
-        end
-        if db then
-            logger.debug("do query in :%s,%s", db, tname)
-        else
-            logger.err("table not exists:%s", tname)
-        end
-        val_time = futil.get_next_month(val_time)
-        if val_time >= end_time then
-            break
+    logger.debug("audit.audit_test")
+    local rank_user = require "recharge_rank" 
+    if not (rank_user and next(rank_user)) then
+        logger.err("rank user empty")
+        return
+    end
+    local num = 0
+    for userID, amount in pairs(rank_user) do
+        local uif = user.get_user_info(userID) or {}
+        uif.winCount = uif.winCount or 0
+        uif.loseCount = uif.loseCount or 0
+        if uif.winCount == 0 and uif.loseCount == 0 then
+            num = num + 1
         end
     end
-    logger.debug("calc_active_day done !")
+    logger.debug("total:10000, un process:%s", num)
+    logger.debug("audit_test done !")
 end
 
 function audit.audit_active_day()
