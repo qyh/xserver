@@ -499,6 +499,80 @@ local function format_output_string(str)
     return str
 end
 
+function audit.audit_recharge_detail()
+    logger.debug("audit.audit_recharge_detail")
+    local rank_user = require "recharge_rank"
+    local order_tables = {"OnlinePayNotify2017", "OnlinePayNotify2018", "OnlinePayNotify2019"}
+    --local order_tables = {"OnlinePayNotify_tmptest"}
+    local sql = "select * from Mall"
+    local mall_info = {}
+    local rv = mysql_aux["2019_118"].exec_sql(sql)
+    if not (rv and next(rv)) then
+        logger.err("get mall info fail")
+        return
+    end
+    for k, v in pairs(rv) do
+        mall_info[v.ID] = v
+    end
+    logger.debug("get mall info success")
+    local lastID = 0
+    local begin_t = os.time()
+    local filename = "../out/recharge_detail.txt" 
+    local sep = " | "
+    local outfile = io.open(filename, "w")
+    local title = format_output_string("账号ID")..sep..format_output_string("名称")..sep..format_output_string("充值时间")..sep..format_output_string("充值金额").."\n"
+    outfile:write(title)
+    if not outfile then
+        logger.err("open %s fail", filename)
+        return
+    end
+    local user_cache = {}
+    for k, tbname in pairs(order_tables) do
+        logger.debug('audit_recharge_detail deal with table:%s', tbname)
+        while true do
+            local _t = os.time()
+            logger.debug('audit_recharge_detail query from ID:%s,table:%s', lastID, tbname)
+            local sql = string.format("select * from %s where ID > %s order by ID asc limit 10000",
+            tbname, lastID) 
+            local res = mysql_aux.localhost.exec_sql(sql)
+            if not (res and next(res)) then
+                break
+            else
+                for k, v in pairs(res) do
+                    if rank_user[v.userID] then
+                        if not user_cache[v.userID] then
+                            local sql = string.format("select * from User where ID=%s", v.userID)
+                            local db_user = mysql_aux['2019_118'].exec_sql(sql)
+                            if db_user.badresult then
+                                logger.err("get user info fail from db:%s,%s", v.userID, futil.toStr(db_user))
+                                db_user = {code = "null"}
+                            else
+                                if not (db_user and next(db_user)) then
+                                    db_user = {code = "null"}
+                                else
+                                    user_cache[v.userID] = db_user[1]
+                                end
+                            end
+                        end
+                        local txt = format_output_string(tostring(user_cache[v.userID].code))..sep..format_output_string(user_cache[v.userID].nickName)..sep..format_output_string(v.notifyTime)..sep..format_output_string(tostring(v.totalFee)).."\n"
+                        outfile:write(txt)
+                    end
+                end
+                outfile:flush()
+                lastID = res[#res].ID
+                logger.debug("update lastID to:%s", lastID)
+            end
+            logger.debug('audit_recharge_detail deal with 10000 row take time:%s sec', os.time() - _t)
+            skynet.sleep(100)
+        end
+        logger.debug('deal with table:%s end', tbname)
+    end
+    outfile:flush()
+    outfile:close()
+    local end_t = os.time()
+    logger.debug("audit_recharge_detail done !! take time:%s sec", end_t - begin_t)
+end
+
 function audit.audit_goldcoin_log()
     logger.debug("audit_goldcoin_log")
     local rank_user = require "recharge_rank"
@@ -518,9 +592,9 @@ function audit.audit_goldcoin_log()
     local end_time = futil.getTimeByDate("2020-01-01 00:00:00")
     local table_prefix = {"GoldCoinLog","RoomCardLog"}
     --分隔符
-    local sep = " | "
     local filename = string.format("../out/goldCoin_roomCard_log.txt") 
     local outfile = io.open(filename, "w")
+    local sep = " | "
     local title = format_output_string("账号ID")..sep..format_output_string("名称")..sep..format_output_string("消耗时间")..sep..format_output_string("消耗币种")..sep..format_output_string("消耗数量").."\n"
     outfile:write(title)
     for i=1, 100 do
