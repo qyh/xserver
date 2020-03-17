@@ -311,12 +311,7 @@ function audit.audit_active_day()
     end
     logger.debug("calc_active_day done !")
 end
---另一种统计前10000R输赢局数方法
-function audit.audit_game_win_lose_2()
-    logger.debug("audit.audit_game_win_lose_2")
-    local table_prefix = {"GameUserInfoLog", "MatchUserInfoLog", "NewRoomSelfUserInfoLog"}
-    local begin_time = futil.getTimeByDate("2017-03-05 00:00:00")
-    local end_time = futil.getTimeByDate("2020-01-01 00:00:00")
+function audit.audit_clear_game_win_lose()
     local rank_user = require "recharge_rank" 
     if not (rank_user and next(rank_user)) then
         logger.err("rank user empty")
@@ -326,6 +321,18 @@ function audit.audit_game_win_lose_2()
         redis:set(rkey, 0)
         local rkey = const.redis_key.game_lose..":"..userID
         redis:set(rkey, 0)
+    end
+    logger.debug("clear game win lose success")
+end
+--另一种统计前10000R输赢局数方法
+function audit.audit_game_win_lose_2()
+    logger.debug("audit.audit_game_win_lose_2")
+    local table_prefix = {"GameUserInfoLog", "MatchUserInfoLog", "NewRoomSelfUserInfoLog"}
+    local begin_time = futil.getTimeByDate("2017-03-05 00:00:00")
+    local end_time = futil.getTimeByDate("2020-01-01 00:00:00")
+    local rank_user = require "recharge_rank" 
+    if not (rank_user and next(rank_user)) then
+        logger.err("rank user empty")
     end
     for _, prefix in pairs(table_prefix) do
         local val_time = begin_time
@@ -344,13 +351,14 @@ function audit.audit_game_win_lose_2()
             end
             if db then
                 logger.debug("query from table %s.%s", db, tname)
-                local lastID = 0
+                local cursor = string.format("%s:%s", const.redis_key.game_win_lose_cursor, tname)
+                local lastID = redis:get(cursor) or 0
                 local count = 10000
                 local _t = os.time()
                 while true do
                     logger.debug("query table:%s from ID:%s", db.."."..tname, lastID)
                     local _t = os.time()
-                    local sql = string.format("select * from %s where ID > %s order by ID asc limit %s", tname, lastID, count)
+                    local sql = string.format("select * from %s where ID > %s and userID >= 5000 order by ID asc limit %s", tname, lastID, count)
                     local rv = mysql_aux[db].exec_sql(sql)
                     if rv.badresult then
                         logger.err("table may not exists:%s.%s", db, tname)
@@ -367,8 +375,10 @@ function audit.audit_game_win_lose_2()
                                     redis:incr(rkey)
                                 end
                             end
+                            redis:set(cursor, gameLog.ID)
                         end
                         lastID = rv[#rv].ID
+                        logger.debug('update game_win_lose_cursor to :%s', lastID)
                     else
                         break
                     end

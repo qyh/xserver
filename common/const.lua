@@ -18,6 +18,7 @@ const.redis_key = {
     game_win = "game_win",
     game_lose = "game_lose",
     game_log_cursor = "game_log_cursor", ---游戏牌局记录游标
+    game_win_lose_cursor = "game_win_lose_cursor",
     game_record_rank = "game_record_rank",
 }
 
