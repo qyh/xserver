@@ -15,4 +15,5 @@ redis_conf = [[{
 	"port": 6379
 }]]
 audit_job = name 
+debug_port = 10002
 daemon="../run/"..name..".pid"

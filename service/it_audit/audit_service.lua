@@ -450,7 +450,7 @@ function audit.audit_game_record_rank()
                         break
                     end
                     logger.debug("query 10000 row take time:%s", os.time() - _t)
-                    skynet.sleep(1000)
+                    skynet.sleep(100)
                 end
             else
                 logger.err("table %s not exists", tname)

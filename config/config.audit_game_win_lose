@@ -1,6 +1,6 @@
 thread = 8
 name = "audit_game_win_lose"
---logger = "../log/"..name..".log" 
+logger = "../log/"..name.."_core"..".log" 
 logpath = "../log"
 harbor = 0
 start = "main_it_audit"
@@ -15,4 +15,5 @@ redis_conf = [[{
 	"port": 6379
 }]]
 audit_job = name 
+debug_port = 10001
 daemon="../run/"..name..".pid"

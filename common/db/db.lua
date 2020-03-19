@@ -8,6 +8,7 @@ conf.mysql = {
         database = "Zipai",
         user = "root",
         password = "123",
+        max_packet_size = 10 * 1024 * 1024,
         type = 0,
     },
     localhost = {
@@ -17,6 +18,7 @@ conf.mysql = {
         user = "root",
         password = "123",
         type = 0,
+        max_packet_size = 10 * 1024 * 1024,
     },
     ["2017_118"] = {
         host = "47.112.252.58",
@@ -25,6 +27,7 @@ conf.mysql = {
         user = "qyh_2019_db_user",
         password = "qS6.WaQr0nZv0*&G",
         type = 1,
+        max_packet_size = 10 * 1024 * 1024,
     },
     ["2017_115"] = {
         host = "47.115.47.54",
@@ -33,6 +36,7 @@ conf.mysql = {
         user = "qyh_2019_db_user",
         password = "qS6.WaQr0nZv0*&G",
         type = 1,
+        max_packet_size = 10 * 1024 * 1024,
     },
     ["2018_118"] = {
         host = "8.129.15.148",
@@ -41,6 +45,7 @@ conf.mysql = {
         user = "qyh_2019_db_user",
         password = "qS6.WaQr0nZv0*&G",
         type = 1,
+        max_packet_size = 10 * 1024 * 1024,
     },
     ["2018_115"] = {
         host = "47.115.124.181",
@@ -49,6 +54,7 @@ conf.mysql = {
         user = "qyh_2019_db_user",
         password = "qS6.WaQr0nZv0*&G",
         type = 1,
+        max_packet_size = 10 * 1024 * 1024,
     },
     ["2019_118"] = {
         host = "120.79.9.214",
@@ -57,6 +63,7 @@ conf.mysql = {
         user = "qyh_2019_db_user",
         password = "qS6.WaQr0nZv0*&G",
         type = 1,
+        max_packet_size = 10 * 1024 * 1024,
     },
     ["2019_115"] = {
         host = "120.77.178.144",
@@ -65,6 +72,7 @@ conf.mysql = {
         user = "qyh_2019_db_user",
         password = "qS6.WaQr0nZv0*&G",
         type = 1,
+        max_packet_size = 10 * 1024 * 1024,
     },
 }
 conf.mysqldb_name = {}
