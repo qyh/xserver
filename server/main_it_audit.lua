@@ -8,9 +8,11 @@ skynet.start(function()
     if tonumber(debug_port) then
         skynet.newservice("debug_console", debug_port)
     end
+    skynet.newservice('webclient')
     skynet.newservice("logservice")
-	skynet.uniqueservice('snowflake')
-	skynet.uniqueservice('redis_pubsub')	
+    skynet.uniqueservice('snowflake')
+    skynet.uniqueservice('redis_pubsub')    
+    skynet.newservice('redis_service')    
     logger.debug("db.db:%s", futil.toStr(dbconf))
     skynet.newservice("mysql_service")
     skynet.newservice("audit_service")

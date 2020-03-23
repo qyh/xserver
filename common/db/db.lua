@@ -1,5 +1,15 @@
 local conf = {}
 
+conf.redis = {
+    [1] = {
+        host = "127.0.0.1",
+        port = 6379,
+    },
+    [2] = {
+        host = "192.168.82.164",
+        port = 6379,
+    },
+}
 
 conf.mysql = {
     export = {

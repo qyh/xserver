@@ -9,6 +9,7 @@ local dbconf = require "db.db"
 local mysql_conf = dbconf.mysql
 local mysql_aux = require "mysql_aux"
 local redis = require "pubsub"
+local redis_aux = require "redis_aux"
 local user = require "user"
 local const = require "const"
 
@@ -227,6 +228,161 @@ function audit.audit_base_info()
     ]]
 end
 
+function audit.audit_pay_user()
+    logger.debug("audit.audit_pay_user")
+    local rank_user = require "recharge_rank"
+    local order_tables = {"OnlinePayNotify2017", "OnlinePayNotify2018", "OnlinePayNotify2019"}
+    --local order_tables = {"OnlinePayNotify_tmptest"}
+    local sql = "select * from Mall"
+    local mall_info = {}
+    local rv = mysql_aux["2019_118"].exec_sql(sql)
+    if not (rv and next(rv)) then
+        logger.err("get mall info fail")
+        return
+    end
+    for k, v in pairs(rv) do
+        mall_info[v.ID] = v
+    end
+    logger.debug("get mall info success")
+    local lastID = 0
+    local begin_t = os.time()
+    for k, tbname in pairs(order_tables) do
+        logger.debug('audit_recharge deal with table:%s', tbname)
+        while true do
+            local _t = os.time()
+            logger.debug('audit_recharge query from ID:%s,table:%s', lastID, tbname)
+            local sql = string.format("select * from %s where ID > %s order by ID asc limit 10000",
+            tbname, lastID) 
+            local res = mysql_aux.localhost.exec_sql(sql)
+            if not (res and next(res)) then
+                break
+            else
+                for k, v in pairs(res) do
+                    if rank_user[v.userID] then
+                        local mall_detail = mall_info[v.mallID]
+                        local user_info = user.get_user_info(v.userID) or {}
+                        user_info.gameCardRecharge = user_info.gameCardRecharge or 0 
+                        user_info.rechargeCount = user_info.rechargeCount or 0
+                        user_info.goldCoinRecharge = user_info.goldCoinRecharge or 0
+                        user_info.rechargeCount = user_info.rechargeCount + 1
+                        if mall_detail then
+                            local gain_goods = mall_detail.gainGoods
+                            local arr = futil.split(gain_goods, "=")
+                            if #arr == 2 then
+                                local goodsID = tonumber(arr[1])
+                                local goodsCount = tonumber(arr[2])
+                                if goodsID == 107 then
+                                    user_info.gameCardRecharge = user_info.gameCardRecharge + (goodsCount * v.amount)
+                                elseif goodsID == 0 then
+                                    --logger.debug("add goldCoin userID:%s:%s", v.userID, goodsCount)
+                                    user_info.goldCoinRecharge = user_info.goldCoinRecharge + (goodsCount * v.amount)
+                                end
+                                local update_info = {}
+                                update_info.gameCardRecharge = user_info.gameCardRecharge
+                                update_info.rechargeCount = user_info.rechargeCount
+                                update_info.goldCoinRecharge = user_info.goldCoinRecharge
+                                user.set_user_info(v.userID, update_info)
+                            end
+                        end
+                    end
+                end
+                lastID = res[#res].ID
+                logger.debug("update lastID to:%s", lastID)
+            end
+            logger.debug('audit_recharge deal with 10000 row take time:%s sec', os.time() - _t)
+            skynet.sleep(100)
+        end
+        logger.debug('deal with table:%s end', tbname)
+    end
+    local end_t = os.time()
+    logger.debug("audit_recharge done !! take time:%s sec", end_t - begin_t)
+end
+
+function audit.audit_ipcheck()
+    logger.debug("audit_ipcheck")
+    local city_name = require "city_name"
+    
+    local rkey = "pay_user_ip:"
+    --local r = redis:get(rkey)
+    local allIpCounter = {} 
+    local noIpCount = 0
+    local order_tables = {"OnlinePayNotify2017", "OnlinePayNotify2018", "OnlinePayNotify2019"}
+    local count = 10
+    local ipcheckID = "ipcheckID"
+    local lastID = redis:get(ipcheckID) or 0
+    for k, tname in pairs(order_tables) do
+        while true do
+            local sql = string.format("select * from %s where ID > %s order by ID asc limit %s", tname, lastID, count)
+            local res = mysql_aux.localhost.exec_sql(sql)
+            if not (res and next(res)) then
+                break
+            else
+                for _, info in pairs(res) do
+                    local payTime = futil.getTimeByDate(info.notifyTime)
+                    local yearStr = os.date("%Y", payTime)
+                    local ipCounter = allIpCounter[yearStr] or {}
+                    local rkey = rkey..tostring(info.userID)
+                    local ipName = redis:get(rkey)
+                    if ipName then
+                        local isFound = false
+                        for prov, citys in pairs(city_name) do
+                            local flag = false
+                            if citys and next(citys) then
+                                if string.find(ipName, prov) then
+                                    --logger.err("not match :%s", ipName)
+                                    for _, city in pairs(citys) do
+                                        if string.find(ipName, city) then
+                                            local lable = prov..":"..city
+                                            ipCounter[lable] = ipCounter[lable] or 0
+                                            ipCounter[lable] = ipCounter[lable] + 1
+                                            flag = true
+                                            break
+                                        end
+                                    end
+                                    if not flag then
+                                        local arr = futil.split(ipName, " ")
+                                        local lable = prov..":"..arr[2]
+                                        ipCounter[lable] = ipCounter[lable] or 0
+                                        ipCounter[lable] = ipCounter[lable] + 1
+                                    end
+                                end
+                            else
+                                if string.find(ipName, prov) then
+                                    local lable = prov..":"..prov
+                                    ipCounter[lable] = ipCounter[lable] or 0
+                                    ipCounter[lable] = ipCounter[lable] + 1
+                                    flag = true
+                                end
+                            end
+                            if flag then
+                                break
+                            end
+                        end
+                    else
+                        noIpCount = noIpCount + 1
+                    end
+                    allIpCounter[yearStr] = ipCounter
+                end
+                lastID = res[#res].ID
+                --redis:set(ipcheckID, lastID)
+                break
+            end
+        end
+    end
+    for yearStr, counters in pairs(allIpCounter) do
+        local rkey = "ip_counter:"
+        rkey = rkey..yearStr
+        redis_aux.db(2):del(rkey)
+        for k, v in pairs(counters) do
+            logger.debug("%s %s %s", yearStr, k, v)
+            redis_aux.db(2):zadd(rkey, v, k)
+        end
+    end
+    logger.debug("noIP count:%s", noIpCount)
+    logger.debug("audit_ipcheck done")
+
+end
+
 function audit.audit_test()
     logger.debug("audit.audit_test")
     local rank_user = require "recharge_rank" 
@@ -234,6 +390,7 @@ function audit.audit_test()
         logger.err("rank user empty")
         return
     end
+    --[[
     local num = 0
     for userID, amount in pairs(rank_user) do
         local uif = user.get_user_info(userID) or {}
@@ -244,6 +401,13 @@ function audit.audit_test()
         end
     end
     logger.debug("total:10000, un process:%s", num)
+    ]]
+    local r = redis_aux.db(1):set("a", "aaaaaa")
+    r = redis_aux.db(2):set("a", "bbbbbbbbbb")
+    r = redis_aux.db(1):get("a")
+    logger.debug("redis:1 a:%s", r)
+    r = redis_aux.db(2):get("a")
+    logger.debug("redis:2 a:%s", r)
     logger.debug("audit_test done !")
 end
 
