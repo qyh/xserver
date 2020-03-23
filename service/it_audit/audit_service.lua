@@ -175,6 +175,23 @@ function audit.audit_base_info()
     local rank_user = require "recharge_rank"
     for userID, amount in pairs(rank_user) do
         local rkey = string.format("%s:%s",const.redis_key.audit_user, userID)
+        local sql = string.format("select * from UserData where userID=%s", userID)
+        local rv = mysql_aux["2019_118"].exec_sql(sql)
+        if not (rv and next(rv)) then
+            logger.err("get userData info fail:%s", userID)
+        else
+            local info = rv[1]
+            local user_info = {}
+            user_info.regIp = info.regIp 
+            user.set_user_info(userID, user_info)
+            logger.debug("write userData.ip done:%s,%s", userID, user_info.regIp)
+        end
+        skynet.sleep(10)
+    end
+    logger.info("audit_base_info set userData.regIp ALL DONE !!")
+    --[[
+    for userID, amount in pairs(rank_user) do
+        local rkey = string.format("%s:%s",const.redis_key.audit_user, userID)
         local sql = string.format("select * from User where ID=%s", userID)
         local rv = mysql_aux["2019_118"].exec_sql(sql)
         if not (rv and next(rv)) then
@@ -207,6 +224,7 @@ function audit.audit_base_info()
         skynet.sleep(10)
     end
     logger.info("audit_base_info ALL DONE !!")
+    ]]
 end
 
 function audit.audit_test()
