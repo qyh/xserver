@@ -1,6 +1,6 @@
 thread = 8
-name = "audit_recharge"
---logger = "../log/"..name..".log" 
+name = "audit_ipcheck_2018"
+logger = "../log/"..name.."_core"..".log" 
 logpath = "../log"
 harbor = 0
 start = "main_it_audit"
@@ -15,4 +15,4 @@ redis_conf = [[{
 	"port": 6379
 }]]
 audit_job = name 
---daemon="../run/"..name..".pid"
+daemon="../run/"..name..".pid"

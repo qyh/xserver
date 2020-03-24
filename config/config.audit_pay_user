@@ -1,6 +1,6 @@
 thread = 8
-name = "audit_recharge"
---logger = "../log/"..name..".log" 
+name = "audit_pay_user"
+logger = "../log/"..name.."_core"..".log" 
 logpath = "../log"
 harbor = 0
 start = "main_it_audit"

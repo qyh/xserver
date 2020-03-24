@@ -298,23 +298,24 @@ function audit.audit_pay_user()
     logger.debug("audit_recharge done !! take time:%s sec", end_t - begin_t)
 end
 
-function audit.audit_ipcheck()
+function audit.audit_ipcheck_2019()
     logger.debug("audit_ipcheck")
     local city_name = require "city_name"
-    
+    local order_tables = {"OnlinePayNotify2019"}
     local rkey = "pay_user_ip:"
-    --local r = redis:get(rkey)
     local allIpCounter = {} 
     local noIpCount = 0
-    local order_tables = {"OnlinePayNotify2017", "OnlinePayNotify2018", "OnlinePayNotify2019"}
-    local count = 10
+    local count = 10000
     local ipcheckID = "ipcheckID"
     local lastID = redis:get(ipcheckID) or 0
     for k, tname in pairs(order_tables) do
         while true do
+            logger.debug("query from table:%s ID:%s", tname, lastID)
+            local _t = os.time()
             local sql = string.format("select * from %s where ID > %s order by ID asc limit %s", tname, lastID, count)
             local res = mysql_aux.localhost.exec_sql(sql)
             if not (res and next(res)) then
+                logger.debug("query table %s done !!!", tname)
                 break
             else
                 for _, info in pairs(res) do
@@ -364,8 +365,185 @@ function audit.audit_ipcheck()
                     allIpCounter[yearStr] = ipCounter
                 end
                 lastID = res[#res].ID
+                logger.debug("query %s rows take time %s sec", os.time() - _t)
                 --redis:set(ipcheckID, lastID)
+                skynet.sleep(50)
+            end
+        end
+    end
+    for yearStr, counters in pairs(allIpCounter) do
+        local rkey = "ip_counter:"
+        rkey = rkey..yearStr
+        redis_aux.db(2):del(rkey)
+        for k, v in pairs(counters) do
+            logger.debug("%s %s %s", yearStr, k, v)
+            redis_aux.db(2):zadd(rkey, v, k)
+        end
+    end
+    logger.debug("noIP count:%s", noIpCount)
+    logger.debug("audit_ipcheck done")
+
+end
+
+
+function audit.audit_ipcheck_2018()
+    logger.debug("audit_ipcheck")
+    local city_name = require "city_name"
+    local order_tables = {"OnlinePayNotify2018"}
+    local rkey = "pay_user_ip:"
+    local allIpCounter = {} 
+    local noIpCount = 0
+    local count = 10000
+    local ipcheckID = "ipcheckID"
+    local lastID = redis:get(ipcheckID) or 0
+    for k, tname in pairs(order_tables) do
+        while true do
+            logger.debug("query from table:%s ID:%s", tname, lastID)
+            local _t = os.time()
+            local sql = string.format("select * from %s where ID > %s order by ID asc limit %s", tname, lastID, count)
+            local res = mysql_aux.localhost.exec_sql(sql)
+            if not (res and next(res)) then
+                logger.debug("query table %s done !!!", tname)
                 break
+            else
+                for _, info in pairs(res) do
+                    local payTime = futil.getTimeByDate(info.notifyTime)
+                    local yearStr = os.date("%Y", payTime)
+                    local ipCounter = allIpCounter[yearStr] or {}
+                    local rkey = rkey..tostring(info.userID)
+                    local ipName = redis:get(rkey)
+                    if ipName then
+                        local isFound = false
+                        for prov, citys in pairs(city_name) do
+                            local flag = false
+                            if citys and next(citys) then
+                                if string.find(ipName, prov) then
+                                    --logger.err("not match :%s", ipName)
+                                    for _, city in pairs(citys) do
+                                        if string.find(ipName, city) then
+                                            local lable = prov..":"..city
+                                            ipCounter[lable] = ipCounter[lable] or 0
+                                            ipCounter[lable] = ipCounter[lable] + 1
+                                            flag = true
+                                            break
+                                        end
+                                    end
+                                    if not flag then
+                                        local arr = futil.split(ipName, " ")
+                                        local lable = prov..":"..arr[2]
+                                        ipCounter[lable] = ipCounter[lable] or 0
+                                        ipCounter[lable] = ipCounter[lable] + 1
+                                    end
+                                end
+                            else
+                                if string.find(ipName, prov) then
+                                    local lable = prov..":"..prov
+                                    ipCounter[lable] = ipCounter[lable] or 0
+                                    ipCounter[lable] = ipCounter[lable] + 1
+                                    flag = true
+                                end
+                            end
+                            if flag then
+                                break
+                            end
+                        end
+                    else
+                        noIpCount = noIpCount + 1
+                    end
+                    allIpCounter[yearStr] = ipCounter
+                end
+                lastID = res[#res].ID
+                logger.debug("query %s rows take time %s sec", os.time() - _t)
+                --redis:set(ipcheckID, lastID)
+                skynet.sleep(50)
+            end
+        end
+    end
+    for yearStr, counters in pairs(allIpCounter) do
+        local rkey = "ip_counter:"
+        rkey = rkey..yearStr
+        redis_aux.db(2):del(rkey)
+        for k, v in pairs(counters) do
+            logger.debug("%s %s %s", yearStr, k, v)
+            redis_aux.db(2):zadd(rkey, v, k)
+        end
+    end
+    logger.debug("noIP count:%s", noIpCount)
+    logger.debug("audit_ipcheck done")
+
+end
+
+
+function audit.audit_ipcheck()
+    logger.debug("audit_ipcheck")
+    local city_name = require "city_name"
+    local order_tables = {"OnlinePayNotify2017"}
+    local rkey = "pay_user_ip:"
+    local allIpCounter = {} 
+    local noIpCount = 0
+    local count = 10000
+    local ipcheckID = "ipcheckID"
+    local lastID = redis:get(ipcheckID) or 0
+    for k, tname in pairs(order_tables) do
+        while true do
+            logger.debug("query from table:%s ID:%s", tname, lastID)
+            local _t = os.time()
+            local sql = string.format("select * from %s where ID > %s order by ID asc limit %s", tname, lastID, count)
+            local res = mysql_aux.localhost.exec_sql(sql)
+            if not (res and next(res)) then
+                logger.debug("query table %s done !!!", tname)
+                break
+            else
+                for _, info in pairs(res) do
+                    local payTime = futil.getTimeByDate(info.notifyTime)
+                    local yearStr = os.date("%Y", payTime)
+                    local ipCounter = allIpCounter[yearStr] or {}
+                    local rkey = rkey..tostring(info.userID)
+                    local ipName = redis:get(rkey)
+                    if ipName then
+                        local isFound = false
+                        for prov, citys in pairs(city_name) do
+                            local flag = false
+                            if citys and next(citys) then
+                                if string.find(ipName, prov) then
+                                    --logger.err("not match :%s", ipName)
+                                    for _, city in pairs(citys) do
+                                        if string.find(ipName, city) then
+                                            local lable = prov..":"..city
+                                            ipCounter[lable] = ipCounter[lable] or 0
+                                            ipCounter[lable] = ipCounter[lable] + 1
+                                            flag = true
+                                            break
+                                        end
+                                    end
+                                    if not flag then
+                                        local arr = futil.split(ipName, " ")
+                                        local lable = prov..":"..arr[2]
+                                        ipCounter[lable] = ipCounter[lable] or 0
+                                        ipCounter[lable] = ipCounter[lable] + 1
+                                    end
+                                end
+                            else
+                                if string.find(ipName, prov) then
+                                    local lable = prov..":"..prov
+                                    ipCounter[lable] = ipCounter[lable] or 0
+                                    ipCounter[lable] = ipCounter[lable] + 1
+                                    flag = true
+                                end
+                            end
+                            if flag then
+                                break
+                            end
+                        end
+                    else
+                        noIpCount = noIpCount + 1
+                    end
+                    allIpCounter[yearStr] = ipCounter
+                end
+                lastID = res[#res].ID
+                logger.debug("query %s rows take time %s sec", os.time() - _t)
+                --redis:set(ipcheckID, lastID)
+                skynet.sleep(50)
             end
         end
     end
