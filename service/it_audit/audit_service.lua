@@ -342,9 +342,16 @@ function audit.audit_ipcheck_2019()
                                     end
                                     if not flag then
                                         local arr = futil.split(ipName, " ")
-                                        local lable = prov..":"..arr[2]
-                                        ipCounter[lable] = ipCounter[lable] or 0
-                                        ipCounter[lable] = ipCounter[lable] + 1
+                                        if #arr > 1 then
+                                            local lable = prov..":"..arr[2]
+                                            ipCounter[lable] = ipCounter[lable] or 0
+                                            ipCounter[lable] = ipCounter[lable] + 1
+                                        else
+                                            local lable = prov..":"..arr[1]
+                                            ipCounter[lable] = ipCounter[lable] or 0
+                                            ipCounter[lable] = ipCounter[lable] + 1
+                                            logger.debug("no city match %s lable %s", ipName, lable)
+                                        end
                                     end
                                 end
                             else
@@ -430,9 +437,16 @@ function audit.audit_ipcheck_2018()
                                     end
                                     if not flag then
                                         local arr = futil.split(ipName, " ")
-                                        local lable = prov..":"..arr[2]
-                                        ipCounter[lable] = ipCounter[lable] or 0
-                                        ipCounter[lable] = ipCounter[lable] + 1
+                                        if #arr > 1 then
+                                            local lable = prov..":"..arr[2]
+                                            ipCounter[lable] = ipCounter[lable] or 0
+                                            ipCounter[lable] = ipCounter[lable] + 1
+                                        else
+                                            local lable = prov..":"..arr[1]
+                                            ipCounter[lable] = ipCounter[lable] or 0
+                                            ipCounter[lable] = ipCounter[lable] + 1
+                                            logger.debug("no city match %s lable %s", ipName, lable)
+                                        end
                                     end
                                 end
                             else
@@ -518,9 +532,16 @@ function audit.audit_ipcheck()
                                     end
                                     if not flag then
                                         local arr = futil.split(ipName, " ")
-                                        local lable = prov..":"..arr[2]
-                                        ipCounter[lable] = ipCounter[lable] or 0
-                                        ipCounter[lable] = ipCounter[lable] + 1
+                                        if #arr > 1 then
+                                            local lable = prov..":"..arr[2]
+                                            ipCounter[lable] = ipCounter[lable] or 0
+                                            ipCounter[lable] = ipCounter[lable] + 1
+                                        else
+                                            local lable = prov..":"..arr[1]
+                                            ipCounter[lable] = ipCounter[lable] or 0
+                                            ipCounter[lable] = ipCounter[lable] + 1
+                                            logger.debug("no city match %s lable %s", ipName, lable)
+                                        end
                                     end
                                 end
                             else
