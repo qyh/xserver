@@ -307,6 +307,7 @@ function audit.audit_ipcheck_2019()
     local noIpCount = 0
     local count = 10000
     local ipcheckID = "ipcheckID"
+    local userCounter = {}
     local lastID = redis:get(ipcheckID) or 0
     for k, tname in pairs(order_tables) do
         while true do
@@ -322,54 +323,58 @@ function audit.audit_ipcheck_2019()
                     local payTime = futil.getTimeByDate(info.notifyTime)
                     local yearStr = os.date("%Y", payTime)
                     local ipCounter = allIpCounter[yearStr] or {}
-                    local rkey = rkey..tostring(info.userID)
-                    local ipName = redis:get(rkey)
-                    if ipName then
-                        local isFound = false
-                        for prov, citys in pairs(city_name) do
-                            local flag = false
-                            if citys and next(citys) then
-                                if string.find(ipName, prov) then
-                                    --logger.err("not match :%s", ipName)
-                                    for _, city in pairs(citys) do
-                                        if string.find(ipName, city) then
-                                            local lable = prov..":"..city
-                                            ipCounter[lable] = ipCounter[lable] or 0
-                                            ipCounter[lable] = ipCounter[lable] + 1
-                                            flag = true
-                                            break
+                    if not userCounter[info.userID] then
+                        local rkey = rkey..tostring(info.userID)
+                        local ipName = redis:get(rkey)
+                        if ipName then
+                            local isFound = false
+                            for prov, citys in pairs(city_name) do
+                                local flag = false
+                                if citys and next(citys) then
+                                    if string.find(ipName, prov) then
+                                        --logger.err("not match :%s", ipName)
+                                        for _, city in pairs(citys) do
+                                            if string.find(ipName, city) then
+                                                local lable = prov..":"..city
+                                                ipCounter[lable] = ipCounter[lable] or 0
+                                                ipCounter[lable] = ipCounter[lable] + 1
+                                                flag = true
+                                                break
+                                            end
+                                        end
+                                        if not flag then
+                                            local arr = futil.split(ipName, " ")
+                                            if #arr > 1 then
+                                                local lable = prov..":"..arr[2]
+                                                ipCounter[lable] = ipCounter[lable] or 0
+                                                ipCounter[lable] = ipCounter[lable] + 1
+                                            else
+                                                local lable = prov..":"..arr[1]
+                                                ipCounter[lable] = ipCounter[lable] or 0
+                                                ipCounter[lable] = ipCounter[lable] + 1
+                                                logger.debug("no city match %s lable %s", ipName, lable)
+                                            end
                                         end
                                     end
-                                    if not flag then
-                                        local arr = futil.split(ipName, " ")
-                                        if #arr > 1 then
-                                            local lable = prov..":"..arr[2]
-                                            ipCounter[lable] = ipCounter[lable] or 0
-                                            ipCounter[lable] = ipCounter[lable] + 1
-                                        else
-                                            local lable = prov..":"..arr[1]
-                                            ipCounter[lable] = ipCounter[lable] or 0
-                                            ipCounter[lable] = ipCounter[lable] + 1
-                                            logger.debug("no city match %s lable %s", ipName, lable)
-                                        end
+                                else
+                                    if string.find(ipName, prov) then
+                                        local lable = prov..":"..prov
+                                        ipCounter[lable] = ipCounter[lable] or 0
+                                        ipCounter[lable] = ipCounter[lable] + 1
+                                        flag = true
                                     end
                                 end
-                            else
-                                if string.find(ipName, prov) then
-                                    local lable = prov..":"..prov
-                                    ipCounter[lable] = ipCounter[lable] or 0
-                                    ipCounter[lable] = ipCounter[lable] + 1
-                                    flag = true
+                                if flag then
+                                    break
                                 end
                             end
-                            if flag then
-                                break
-                            end
+                        else
+                            noIpCount = noIpCount + 1
                         end
-                    else
-                        noIpCount = noIpCount + 1
+                        userCounter[info.userID] = true 
+                        allIpCounter[yearStr] = ipCounter
                     end
-                    allIpCounter[yearStr] = ipCounter
+                    
                 end
                 lastID = res[#res].ID
                 logger.debug("query %s rows take time %s sec", os.time() - _t)
@@ -402,6 +407,7 @@ function audit.audit_ipcheck_2018()
     local noIpCount = 0
     local count = 10000
     local ipcheckID = "ipcheckID"
+    local userCounter = {}
     local lastID = redis:get(ipcheckID) or 0
     for k, tname in pairs(order_tables) do
         while true do
@@ -417,54 +423,58 @@ function audit.audit_ipcheck_2018()
                     local payTime = futil.getTimeByDate(info.notifyTime)
                     local yearStr = os.date("%Y", payTime)
                     local ipCounter = allIpCounter[yearStr] or {}
-                    local rkey = rkey..tostring(info.userID)
-                    local ipName = redis:get(rkey)
-                    if ipName then
-                        local isFound = false
-                        for prov, citys in pairs(city_name) do
-                            local flag = false
-                            if citys and next(citys) then
-                                if string.find(ipName, prov) then
-                                    --logger.err("not match :%s", ipName)
-                                    for _, city in pairs(citys) do
-                                        if string.find(ipName, city) then
-                                            local lable = prov..":"..city
-                                            ipCounter[lable] = ipCounter[lable] or 0
-                                            ipCounter[lable] = ipCounter[lable] + 1
-                                            flag = true
-                                            break
+                    if not userCounter[info.userID] then
+                        local rkey = rkey..tostring(info.userID)
+                        local ipName = redis:get(rkey)
+                        if ipName then
+                            local isFound = false
+                            for prov, citys in pairs(city_name) do
+                                local flag = false
+                                if citys and next(citys) then
+                                    if string.find(ipName, prov) then
+                                        --logger.err("not match :%s", ipName)
+                                        for _, city in pairs(citys) do
+                                            if string.find(ipName, city) then
+                                                local lable = prov..":"..city
+                                                ipCounter[lable] = ipCounter[lable] or 0
+                                                ipCounter[lable] = ipCounter[lable] + 1
+                                                flag = true
+                                                break
+                                            end
+                                        end
+                                        if not flag then
+                                            local arr = futil.split(ipName, " ")
+                                            if #arr > 1 then
+                                                local lable = prov..":"..arr[2]
+                                                ipCounter[lable] = ipCounter[lable] or 0
+                                                ipCounter[lable] = ipCounter[lable] + 1
+                                            else
+                                                local lable = prov..":"..arr[1]
+                                                ipCounter[lable] = ipCounter[lable] or 0
+                                                ipCounter[lable] = ipCounter[lable] + 1
+                                                logger.debug("no city match %s lable %s", ipName, lable)
+                                            end
                                         end
                                     end
-                                    if not flag then
-                                        local arr = futil.split(ipName, " ")
-                                        if #arr > 1 then
-                                            local lable = prov..":"..arr[2]
-                                            ipCounter[lable] = ipCounter[lable] or 0
-                                            ipCounter[lable] = ipCounter[lable] + 1
-                                        else
-                                            local lable = prov..":"..arr[1]
-                                            ipCounter[lable] = ipCounter[lable] or 0
-                                            ipCounter[lable] = ipCounter[lable] + 1
-                                            logger.debug("no city match %s lable %s", ipName, lable)
-                                        end
+                                else
+                                    if string.find(ipName, prov) then
+                                        local lable = prov..":"..prov
+                                        ipCounter[lable] = ipCounter[lable] or 0
+                                        ipCounter[lable] = ipCounter[lable] + 1
+                                        flag = true
                                     end
                                 end
-                            else
-                                if string.find(ipName, prov) then
-                                    local lable = prov..":"..prov
-                                    ipCounter[lable] = ipCounter[lable] or 0
-                                    ipCounter[lable] = ipCounter[lable] + 1
-                                    flag = true
+                                if flag then
+                                    break
                                 end
                             end
-                            if flag then
-                                break
-                            end
+                        else
+                            noIpCount = noIpCount + 1
                         end
-                    else
-                        noIpCount = noIpCount + 1
+                        userCounter[info.userID] = true 
+                        allIpCounter[yearStr] = ipCounter
                     end
-                    allIpCounter[yearStr] = ipCounter
+                    
                 end
                 lastID = res[#res].ID
                 logger.debug("query %s rows take time %s sec", os.time() - _t)
@@ -483,8 +493,7 @@ function audit.audit_ipcheck_2018()
         end
     end
     logger.debug("noIP count:%s", noIpCount)
-    logger.debug("audit_ipcheck done")
-
+    logger.debug("audit_ipcheck done")  
 end
 
 
@@ -497,6 +506,7 @@ function audit.audit_ipcheck()
     local noIpCount = 0
     local count = 10000
     local ipcheckID = "ipcheckID"
+    local userCounter = {}
     local lastID = redis:get(ipcheckID) or 0
     for k, tname in pairs(order_tables) do
         while true do
@@ -512,54 +522,58 @@ function audit.audit_ipcheck()
                     local payTime = futil.getTimeByDate(info.notifyTime)
                     local yearStr = os.date("%Y", payTime)
                     local ipCounter = allIpCounter[yearStr] or {}
-                    local rkey = rkey..tostring(info.userID)
-                    local ipName = redis:get(rkey)
-                    if ipName then
-                        local isFound = false
-                        for prov, citys in pairs(city_name) do
-                            local flag = false
-                            if citys and next(citys) then
-                                if string.find(ipName, prov) then
-                                    --logger.err("not match :%s", ipName)
-                                    for _, city in pairs(citys) do
-                                        if string.find(ipName, city) then
-                                            local lable = prov..":"..city
-                                            ipCounter[lable] = ipCounter[lable] or 0
-                                            ipCounter[lable] = ipCounter[lable] + 1
-                                            flag = true
-                                            break
+                    if not userCounter[info.userID] then
+                        local rkey = rkey..tostring(info.userID)
+                        local ipName = redis:get(rkey)
+                        if ipName then
+                            local isFound = false
+                            for prov, citys in pairs(city_name) do
+                                local flag = false
+                                if citys and next(citys) then
+                                    if string.find(ipName, prov) then
+                                        --logger.err("not match :%s", ipName)
+                                        for _, city in pairs(citys) do
+                                            if string.find(ipName, city) then
+                                                local lable = prov..":"..city
+                                                ipCounter[lable] = ipCounter[lable] or 0
+                                                ipCounter[lable] = ipCounter[lable] + 1
+                                                flag = true
+                                                break
+                                            end
+                                        end
+                                        if not flag then
+                                            local arr = futil.split(ipName, " ")
+                                            if #arr > 1 then
+                                                local lable = prov..":"..arr[2]
+                                                ipCounter[lable] = ipCounter[lable] or 0
+                                                ipCounter[lable] = ipCounter[lable] + 1
+                                            else
+                                                local lable = prov..":"..arr[1]
+                                                ipCounter[lable] = ipCounter[lable] or 0
+                                                ipCounter[lable] = ipCounter[lable] + 1
+                                                logger.debug("no city match %s lable %s", ipName, lable)
+                                            end
                                         end
                                     end
-                                    if not flag then
-                                        local arr = futil.split(ipName, " ")
-                                        if #arr > 1 then
-                                            local lable = prov..":"..arr[2]
-                                            ipCounter[lable] = ipCounter[lable] or 0
-                                            ipCounter[lable] = ipCounter[lable] + 1
-                                        else
-                                            local lable = prov..":"..arr[1]
-                                            ipCounter[lable] = ipCounter[lable] or 0
-                                            ipCounter[lable] = ipCounter[lable] + 1
-                                            logger.debug("no city match %s lable %s", ipName, lable)
-                                        end
+                                else
+                                    if string.find(ipName, prov) then
+                                        local lable = prov..":"..prov
+                                        ipCounter[lable] = ipCounter[lable] or 0
+                                        ipCounter[lable] = ipCounter[lable] + 1
+                                        flag = true
                                     end
                                 end
-                            else
-                                if string.find(ipName, prov) then
-                                    local lable = prov..":"..prov
-                                    ipCounter[lable] = ipCounter[lable] or 0
-                                    ipCounter[lable] = ipCounter[lable] + 1
-                                    flag = true
+                                if flag then
+                                    break
                                 end
                             end
-                            if flag then
-                                break
-                            end
+                        else
+                            noIpCount = noIpCount + 1
                         end
-                    else
-                        noIpCount = noIpCount + 1
+                        userCounter[info.userID] = true 
+                        allIpCounter[yearStr] = ipCounter
                     end
-                    allIpCounter[yearStr] = ipCounter
+                    
                 end
                 lastID = res[#res].ID
                 logger.debug("query %s rows take time %s sec", os.time() - _t)
@@ -578,8 +592,7 @@ function audit.audit_ipcheck()
         end
     end
     logger.debug("noIP count:%s", noIpCount)
-    logger.debug("audit_ipcheck done")
-
+    logger.debug("audit_ipcheck done")      
 end
 
 function audit.audit_test()
