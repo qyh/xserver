@@ -963,7 +963,7 @@ function audit.audit_game_win_lose()
                     user.set_user_info(userID, update_info)
                 end
             end
-            logger.debug("idx audit_game_win_lose done ", idx)
+            logger.debug("idx:%s audit_game_win_lose done ", idx)
         end, idx, tub)
     end
     logger.debug("audit_game_win_lost done !!")
