@@ -602,7 +602,6 @@ function audit.audit_test()
         logger.err("rank user empty")
         return
     end
-    --[[
     local num = 0
     for userID, amount in pairs(rank_user) do
         local uif = user.get_user_info(userID) or {}
@@ -613,13 +612,14 @@ function audit.audit_test()
         end
     end
     logger.debug("total:10000, un process:%s", num)
-    ]]
+    --[[
     local r = redis_aux.db(1):set("a", "aaaaaa")
     r = redis_aux.db(2):set("a", "bbbbbbbbbb")
     r = redis_aux.db(1):get("a")
     logger.debug("redis:1 a:%s", r)
     r = redis_aux.db(2):get("a")
     logger.debug("redis:2 a:%s", r)
+    ]]
     logger.debug("audit_test done !")
 end
 
@@ -870,72 +870,101 @@ function audit.audit_game_win_lose()
     if not (rank_user and next(rank_user)) then
         logger.err("rank user empty")
     end
+    local co_count = 10
+    local users = {}
+    local num = 0
     for userID, amount in pairs(rank_user) do
-        local winCount = 0
-        local loseCount = 0
         local uif = user.get_user_info(userID) or {}
         uif.winCount = uif.winCount or 0
         uif.loseCount = uif.loseCount or 0
         if uif.winCount == 0 and uif.loseCount == 0 then
-            for _, prefix in pairs(table_prefix) do
-                local val_time = begin_time
-                while true do
-                    local tname = string.format("%s_%s", prefix, futil.dayStr(val_time, "_"))
-                    local db = nil
-                    for k, conf in pairs(mysql_conf) do
-                        local dbname = conf.database
-                        if dbname == 'GameLog' and conf.type == 1 then
-                            if is_table_exists(k, dbname, tname) then
-                                logger.debug('table:%s exists in %s', dbname.."."..tname, k)
-                                db = k       
-                                break
-                            end
-                        end
-                    end
-                    if db then
-                        logger.debug("query user:%s from table %s.%s", userID, db, tname)
-                        local lastID = 0
-                        local count = 10000
-                        local _t = os.time()
+            num = num + 1
+            local idx = userID % co_count + 1
+            local tub = users[idx] or {}
+            table.insert(tub, userID)
+            users[idx] = tub
+        end
+    end
+    logger.debug('un deal count:%s', num)
+    local total = 0
+    for idx, tub in pairs(users) do
+        local count = #tub
+        total = total + count
+        logger.debug("idx:%s count:%s", count)
+    end
+    logger.debug('un deal total count:%s', total)
+    for idx, tub in pairs(users) do
+        skynet.fork(function(idx, tub)
+            logger.debug("audit_game_win_lose co %s, count:%s", idx, #tub)
+            for _, userID in pairs(tub) do
+                local winCount = 0
+                local loseCount = 0
+                local uif = user.get_user_info(userID) or {}
+                uif.winCount = uif.winCount or 0
+                uif.loseCount = uif.loseCount or 0
+                if uif.winCount == 0 and uif.loseCount == 0 then
+                    for _, prefix in pairs(table_prefix) do
+                        local val_time = begin_time
                         while true do
-                            local sql = string.format("select * from %s where userID=%s and ID > %s order by ID asc limit %s", tname, userID, lastID, count)
-                            local rv = mysql_aux[db].exec_sql(sql)
-                            if rv.badresult then
-                                logger.err("table may not exists:%s.%s", db, tname)
-                                break
-                            end
-                            if rv and next(rv) then
-                                for _, gameLog in pairs(rv) do
-                                    if gameLog.state == '赢' then
-                                        winCount = winCount + 1
-                                    elseif gameLog.state == '输' then
-                                        loseCount = loseCount + 1
+                            local tname = string.format("%s_%s", prefix, futil.dayStr(val_time, "_"))
+                            local db = nil
+                            for k, conf in pairs(mysql_conf) do
+                                local dbname = conf.database
+                                if dbname == 'GameLog' and conf.type == 1 then
+                                    if is_table_exists(k, dbname, tname) then
+                                        logger.debug('table:%s exists in %s', dbname.."."..tname, k)
+                                        db = k       
+                                        break
                                     end
                                 end
-                                lastID = rv[#rv].ID
+                            end
+                            if db then
+                                logger.debug("idx:%s query user:%s from table %s.%s", idx, userID, db, tname)
+                                local lastID = 0
+                                local count = 10000
+                                local _t = os.time()
+                                while true do
+                                    local sql = string.format("select * from %s where userID=%s and ID > %s order by ID asc limit %s", tname, userID, lastID, count)
+                                    local rv = mysql_aux[db].exec_sql(sql)
+                                    if rv.badresult then
+                                        logger.err("table may not exists:%s.%s", db, tname)
+                                        break
+                                    end
+                                    if rv and next(rv) then
+                                        for _, gameLog in pairs(rv) do
+                                            if gameLog.state == '赢' then
+                                                winCount = winCount + 1
+                                            elseif gameLog.state == '输' then
+                                                loseCount = loseCount + 1
+                                            end
+                                        end
+                                        lastID = rv[#rv].ID
+                                    else
+                                        break
+                                    end
+                                    skynet.sleep(100)
+                                end
+                                logger.debug("idx:%s query user:%s from table:%s done, winCount:%s, loseCount:%s, take time:%s sec", idx, userID, tname, winCount, loseCount, os.time() - _t)
                             else
+                                logger.err("table %s not exists", tname)
+                            end
+                            --move to next week
+                            val_time = val_time + 86400*7
+                            if val_time > end_time then
                                 break
                             end
-                            skynet.sleep(100)
                         end
-                        logger.debug("query user:%s from table:%s done, winCount:%s, loseCount:%s, take time:%s sec", userID, tname, winCount, loseCount, os.time() - _t)
-                    else
-                        logger.err("table %s not exists", tname)
                     end
-                    --move to next week
-                    val_time = val_time + 86400*7
-                    if val_time > end_time then
-                        break
-                    end
+                    logger.debug("idx:%s audit user:%s win lose done, winCount:%s, loseCount:%s", idx, userID, winCount, loseCount)
+                    local update_info = {
+                        winCount = winCount,
+                        loseCount = loseCount,
+                    }
+                    user.set_user_info(userID, update_info)
                 end
             end
-            logger.debug("audit user:%s win lose done, winCount:%s, loseCount:%s", userID, winCount, loseCount)
-            local update_info = {
-                winCount = winCount,
-                loseCount = loseCount,
-            }
-            user.set_user_info(userID, update_info)
-        end
+            logger.debug("idx audit_game_win_lose done ", idx)
+        end, idx, tub)
     end
     logger.debug("audit_game_win_lost done !!")
 end
