@@ -1,0 +1,19 @@
+thread = 8
+name = "audit_game_user_info_log"
+logger = "../log/"..name.."_core"..".log" 
+logpath = "../log"
+harbor = 0
+start = "main_it_audit"
+bootstrap = "snlua bootstrap"	-- The service for bootstrap
+luaservice = "./service/?.lua;../server/?.lua;./examples/login/?.lua;"
+	.."../service/?.lua;../service/it_audit/?.lua;"
+lualoader = "lualib/loader.lua"
+cpath = "./cservice/?.so;../luaclib/?.so;"
+preload = '../server/preload.lua'
+redis_conf = [[{
+	"host":"127.0.0.1",
+	"port": 6379
+}]]
+audit_job = name 
+debug_port = 10010
+daemon="../run/"..name..".pid"
