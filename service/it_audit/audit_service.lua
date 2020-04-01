@@ -1073,7 +1073,7 @@ function audit.audit_game_win_lose()
     if not (rank_user and next(rank_user)) then
         logger.err("rank user empty")
     end
-    local co_count = 10
+    local co_count = 8
     local users = {}
     local num = 0
     for userID, amount in pairs(rank_user) do
@@ -1145,7 +1145,7 @@ function audit.audit_game_win_lose()
                                     else
                                         break
                                     end
-                                    skynet.sleep(100)
+                                    skynet.sleep(200)
                                 end
                                 logger.debug("idx:%s query user:%s from table:%s done, winCount:%s, loseCount:%s, take time:%s sec", idx, userID, tname, winCount, loseCount, os.time() - _t)
                             else
