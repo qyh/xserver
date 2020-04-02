@@ -4,19 +4,20 @@ local json = require "cjson"
 local futil = require "futil"
 local dbconf = require "db.db"
 skynet.start(function()
-    skynet.newservice("logservice")
+    --skynet.newservice("logservice")
     skynet.newservice('webclient')
     skynet.newservice('payment')
 	skynet.uniqueservice('snowflake')
-    skynet.newservice("trans_service")
+    --skynet.newservice("trans_service")
 	local redis_conf = skynet.getenv("redis_conf") 
 	local conf = json.decode(redis_conf)
+    skynet.uniqueservice('redis_pubsub')    
 	logger.debug("redis_conf:%s", futil.toStr(conf))
 	local mysql_conf = skynet.getenv("mysql_conf")
 	conf = json.decode(mysql_conf)
 	logger.debug("mysql_conf:%s", futil.toStr(conf))
     logger.debug("db.db:%s", futil.toStr(dbconf))
-    skynet.newservice("mysql_service")
+    --skynet.newservice("mysql_service")
     skynet.newservice("cron_service")
     --[[
     local rpc = skynet.newservice("rpc_service")
