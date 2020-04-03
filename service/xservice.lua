@@ -5,6 +5,7 @@ local logger = require "logger"
 local futil = require "futil"
 local const = require "const"
 local mt_lock = require "mt_lock"
+local https = require "https"
 require "tostring"
 require "skynet.manager"
 local CMD = {}
@@ -36,7 +37,7 @@ function CMD.convertip()
         ['Authorization'] = 'APPCODE '..appCode,
         ['Content-Type'] =  'application/x-www-form-urlencoded; charset=UTF-8',
     }
-    local ok, rv = skynet.call(".webclient", "lua", "post", host, post, header)
+    local ok, rv = https.post(host, post, header) 
     if ok then
         local msg = json.decode(rv)
         logger.debug("rv:%s", futil.toStr(msg))
