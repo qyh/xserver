@@ -36,7 +36,7 @@ THE SOFTWARE.
 
 #define IP_LENGTH               16
 #define MAX(a, b)               (((a) > (b)) ? (a) : (b))
-#define LUA_WEB_CLIENT_MT		("com.dpull.lib.WebClientMT")
+#define LUA_WEB_CLIENT_MT        ("com.dpull.lib.WebClientMT")
 #define ENABLE_FOLLOWLOCATION   1
 
 
@@ -140,7 +140,6 @@ static size_t write_callback(char* buffer, size_t block_size, size_t count, void
 {
     struct webrequest* webrequest = (struct webrequest*)arg;
     assert(webrequest);
-    
     size_t length = block_size * count;
     if (webrequest->content_realloc_failed)
         return length;
@@ -157,7 +156,6 @@ static size_t write_callback(char* buffer, size_t block_size, size_t count, void
         }
         webrequest->content = new_content;
     }
-    
     memcpy(webrequest->content + webrequest->content_length, buffer, length);
     webrequest->content_length += length;
     return length;
@@ -173,22 +171,31 @@ static struct webrequest* webclient_realrequest(struct webclient* webclient, con
         goto failed;
     
     curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1);
-    curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, false);
-    curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, false);
+    if (strncmp(url, "https", 5) == 0) {
+        curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, true);
+        curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, true);
+    } else {
+        curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, false);
+        curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, false);
+    }
     curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, ENABLE_FOLLOWLOCATION);
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_callback);
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, webrequest);
     curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, webrequest->error);
     curl_easy_setopt(handle, CURLOPT_TIMEOUT, webclient->timeout);
     curl_easy_setopt(handle, CURLOPT_URL, url);
+    curl_easy_setopt(handle, CURLOPT_FAILONERROR, false);
 
     //header
     if (header_list) {
+        //curl_easy_setopt(handle, CURLOPT_HEADER, true);
         webrequest->header = header_list;
-        curl_easy_setopt(webrequest->curl, CURLOPT_HTTPHEADER, webrequest->header);
+        curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header_list);
     }
     
     if (postdata) {
+        //printf("postdata:%s\n", postdata);
+        curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, "POST");
         curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, (long)postdatalen);
         curl_easy_setopt(handle, CURLOPT_POSTFIELDS, postdata);
     }
@@ -229,8 +236,9 @@ static int webclient_request(lua_State* l)
     
     struct curl_slist* header_list = NULL;
     if (top > 3 && lua_isstring(l, 4)) {
-        for (int i = 5; i <= top; ++i) {
+        for (int i = 4; i <= top; ++i) {
             const char* str = lua_tostring(l, i);
+            //printf("set header %s\n", str);
             header_list = curl_slist_append(header_list, str);
         }
     }

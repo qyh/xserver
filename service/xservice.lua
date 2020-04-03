@@ -24,6 +24,27 @@ function CMD.audit_mt_lock(...)
     logger.debug("audit_mt_lock end")
 end
 
+function CMD.convertip()
+    local host = 'https://ipcheck.market.alicloudapi.com/convertip'
+    --local host = 'https://baidu.com'
+    local get = false
+    local post = {
+        src = '111.194.236.48',
+    } 
+    local appCode = "2ba2734a68034076b7ffc50641217da5"
+    local header = {
+        ['Authorization'] = 'APPCODE '..appCode,
+        ['Content-Type'] =  'application/x-www-form-urlencoded; charset=UTF-8',
+    }
+    local ok, rv = skynet.call(".webclient", "lua", "post", host, post, header)
+    if ok then
+        local msg = json.decode(rv)
+        logger.debug("rv:%s", futil.toStr(msg))
+    else
+        logger.err("request fail")
+    end
+end
+
 skynet.init(function()
     
 end)

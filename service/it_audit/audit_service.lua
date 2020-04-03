@@ -595,6 +595,7 @@ function audit.audit_ipcheck()
     logger.debug("audit_ipcheck done")      
 end
 
+
 function audit.audit_test()
     logger.debug("audit.audit_test")
     local rank_user = require "recharge_rank" 
