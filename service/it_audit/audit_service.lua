@@ -595,6 +595,23 @@ function audit.audit_ipcheck()
     logger.debug("audit_ipcheck done")      
 end
 
+function audit.clear_game_record_rank()
+    local rv = redis:keys("game_record_rank*")
+    for k, v in pairs(rv) do
+        logger.debug('del %s', v)
+        redis:del(v)
+    end
+    local rv = redis:keys("game_record_rank_done*")
+    for k, v in pairs(rv) do
+        logger.debug('del %s', v)
+        redis:del(v)
+    end
+    local rv = redis:keys("game_log_cursor:*")
+    for k, v in pairs(rv) do
+        logger.debug('del %s', v)
+        redis:del(v)
+    end
+end
 
 function audit.audit_test()
     logger.debug("audit.audit_test")
