@@ -861,7 +861,7 @@ function audit.audit_game_record_rank()
             local rank_key = string.format("%s:%s", const.redis_key.game_record_rank, futil.dayStr(tmp_t))
             local n = redis:zcard(rank_key) or 0
             if n > 100 then
-                redis:zremrangebyrank(rank_key, 0, n - 100 + 1)
+                redis:zremrangebyrank(rank_key, 0, n - 100 - 1)
             end
         end
         val_time = val_time + 86400*7
@@ -939,7 +939,7 @@ function audit.audit_new_room_self_user_info_log()
             local rank_key = string.format("%s:%s", const.redis_key.game_record_rank, futil.dayStr(tmp_t))
             local n = redis:zcard(rank_key) or 0
             if n > 100 then
-                redis:zremrangebyrank(rank_key, 0, n - 100 + 1)
+                redis:zremrangebyrank(rank_key, 0, n - 100 - 1)
             end
         end
         --move to next week
@@ -1019,7 +1019,7 @@ function audit.audit_match_user_info_log()
             local rank_key = string.format("%s:%s", const.redis_key.game_record_rank, futil.dayStr(tmp_t))
             local n = redis:zcard(rank_key) or 0
             if n > 100 then
-                redis:zremrangebyrank(rank_key, 0, n - 100 + 1)
+                redis:zremrangebyrank(rank_key, 0, n - 100 - 1)
             end
         end
         --move to next week
@@ -1099,7 +1099,7 @@ function audit.audit_game_user_info_log()
             local rank_key = string.format("%s:%s", const.redis_key.game_record_rank, futil.dayStr(tmp_t))
             local n = redis:zcard(rank_key) or 0
             if n > 100 then
-                redis:zremrangebyrank(rank_key, 0, n - 100 + 1)
+                redis:zremrangebyrank(rank_key, 0, n - 100 - 1)
             end
         end
         --move to next week
