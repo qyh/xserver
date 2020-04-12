@@ -10,9 +10,6 @@ luaservice = "./service/?.lua;../server/?.lua;./examples/login/?.lua;"
 lualoader = "lualib/loader.lua"
 cpath = "./cservice/?.so;../luaclib/?.so;"
 preload = '../server/preload.lua'
-redis_conf = [[{
-	"host":"127.0.0.1",
-	"port": 6379
-}]]
+redis = "1;pubsub"
 job_name = name 
 --daemon="../run/"..name..".pid"

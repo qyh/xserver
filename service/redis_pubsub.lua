@@ -4,10 +4,16 @@ local json = require "cjson"
 local logger = require "logger"
 local futil = require "futil"
 local const = require "const"
-local redis_conf = skynet.getenv("redis_conf") 
+local dbconf = require "db.db"
+local redis_config = nil
 require "tostring"
 require "skynet.manager"
-local redis_config = json.decode(redis_conf) 
+local conf_name = "pubsub"
+for k, v in pairs(dbconf.redis) do
+	if conf_name == k then
+		redis_config = v
+	end
+end
 local CMD = {}
 local db = nil
 
@@ -97,12 +103,17 @@ skynet.start(function()
 			logger.err('ERROR: Unknown command:%s', tostring(cmd))
 		end
 	end)
-	db = redis.connect(redis_config)
-	if db then
-		logger.debug('redis connect success')
+	if redis_config then
+		db = redis.connect(redis_config)
+		if db then
+			logger.debug('redis connect success')
+		else
+			logger.err('redis connect failed:%s', table.tostring(redis_config))
+		end
+		skynet.register(".redis_pubsub")
 	else
-		logger.err('redis connect failed:%s', table.tostring(redis_config))
+		logger.err("redis_config nil, pubsub_redis exist")
+		skynet.exit()
 	end
-    skynet.register(".redis_pubsub")
 end)
 
