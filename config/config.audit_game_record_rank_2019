@@ -1,5 +1,5 @@
 thread = 8
-name = "audit_game_record_rank_2018"
+name = "audit_game_record_rank_2019"
 logger = "../log/"..name.."_core"..".log" 
 logpath = "../log"
 harbor = 0

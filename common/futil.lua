@@ -946,6 +946,10 @@ function futil.dayStr(t, s)
 	end
 end
 
+function futil.yearStr(t)
+    return os.date("%Y", t or os.time())
+end
+
 function futil.monthStr(t, s)
 	if not s then
 		return os.date("%Y%m", t or os.time())

@@ -16,4 +16,4 @@ redis_conf = [[{
 }]]
 audit_job = name 
 debug_port = 10021
-daemon="../run/"..name..".pid"
+--daemon="../run/"..name..".pid"

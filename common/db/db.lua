@@ -1,5 +1,4 @@
 local conf = {}
-
 conf.redis = {
     ["pubsub"] = {
         host = "127.0.0.1",
@@ -14,8 +13,15 @@ conf.redis = {
         port = 6379,
     },
 }
-
 conf.mysql = {
+    trans = {
+        host = "192.168.82.138",
+        port = "3306",
+        database = "Zipai",
+        user = "root",
+        password = "123",
+        max_packet_size = 10 * 1024 * 1024,
+    },
     export = {
         host = "192.168.82.138",
         port = "3306",
@@ -52,6 +58,7 @@ conf.mysql = {
         type = 1,
         max_packet_size = 10 * 1024 * 1024,
     },
+    --[[
     ["2017_118"] = {
         host = "47.112.252.58",
         port = "3306",
@@ -88,6 +95,7 @@ conf.mysql = {
         type = 1,
         max_packet_size = 10 * 1024 * 1024,
     },
+    ]]
     ["2019_118"] = {
         host = "120.79.9.214",
         port = "3306",

@@ -1,5 +1,5 @@
 thread = 8
-name = "audit_game_record_rank_2018"
+name = "audit_game_record_detail_2018"
 logger = "../log/"..name.."_core"..".log" 
 logpath = "../log"
 harbor = 0
@@ -15,5 +15,4 @@ redis_conf = [[{
 	"port": 6379
 }]]
 audit_job = name 
---debug_port = 10020
 --daemon="../run/"..name..".pid"

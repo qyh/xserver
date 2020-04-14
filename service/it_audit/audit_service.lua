@@ -810,7 +810,127 @@ function audit.audit_game_win_lose_2()
     
     logger.debug("audit_game_win_lost done !!")
 end
+function audit.get_table_prefix_by_date(dstr)
+    local datetime = dstr.." 00:00:00"
+    local begin_time = futil.getTimeByDate("2017-03-05 00:00:00")
+    local end_time = futil.getTimeByDate("2020-01-01 00:00:00")
+    
+    local val_time = begin_time
+    local ret_t = nil
+    while true do
+        local tmp_t = futil.getTimeByDate(datetime)
+        local next_t = val_time + 86400*7 
+        if tmp_t >= val_time and tmp_t < next_t then
+            ret_t = val_time
+            break
+        end
+        val_time = val_time + 86400*7
+        if val_time > end_time then
+            break
+        end
+    end
+    return futil.yearStr(ret_t), futil.dayStr(ret_t, "_")
+end
+function audit.audit_game_record_detail_2019()
+    local filename = "../res/game_record_rank_2018.txt"
+    local top_rank_2019 = {}
+    for line in io.lines(filename) do
+        --logger.debug("line:%s", line)
+        local arr = futil.split(line, ",")
+        if #arr == 4 then
+            table.insert(top_rank_2019, {time = arr[1], userID = arr[2], nickName=arr[3], num=arr[4]})
+        end
+    end
+    filename = "../res/game_record_rank_2019.txt"
+    local top_rank_2019 = {}
+    for line in io.lines(filename) do
+        --logger.debug("line:%s", line)
+        local arr = futil.split(line, ",")
+        if #arr == 4 then
+            table.insert(top_rank_2019, {time = arr[1], userID = arr[2], nickName=arr[3], num=arr[4]})
+        end
+    end
+    table.sort(top_rank_2019, function(a, b)
+        return a.num > b.num
+    end)
+    local topList = {} 
+    local count = 0
+    local s_t = futil.getTimeByDate("2019-01-01 00:00:00")
+    local e_t = futil.getTimeByDate("2020-01-01 00:00:00")
+    for k, v in pairs(top_rank_2019) do
+        if count >= 100 then
+            break
+        end
+        local tmp_t = futil.getTimeByDate(v.time .. " 00:00:00")
 
+        if tmp_t < e_t and tmp_t >= s_t then
+            table.insert(topList, v)
+            count = count + 1
+        end
+    end
+    table.sort(topList, function(a, b) 
+        local a_t = futil.getTimeByDate(a.time.." 00:00:00")
+        local b_t = futil.getTimeByDate(b.time.." 00:00:00")
+        return a_t < b_t
+    end)
+    outfile = io.open("../out/top100_2019.txt", "w")
+    for k, v in pairs(topList) do
+        logger.debug("v:%s, year:%s, prefix:%s", table.tostring(v), audit.get_table_prefix_by_date(v.time))
+        local txt = string.format("%s,%s,%s,%s\n", v.time, v.userID, v.nickName, v.num)
+        outfile:write(txt)
+    end
+    outfile:close()
+end
+function audit.audit_game_record_detail_2018()
+    local filename = "../res/game_record_rank_2017.txt"
+    local top_rank_2018 = {}
+    for line in io.lines(filename) do
+        --logger.debug("line:%s", line)
+        local arr = futil.split(line, ",")
+        if #arr == 4 then
+            table.insert(top_rank_2018, {time = arr[1], userID = arr[2], nickName=arr[3], num=arr[4]})
+        end
+    end
+    filename = "../res/game_record_rank_2018.txt"
+    local top_rank_2018 = {}
+    for line in io.lines(filename) do
+        --logger.debug("line:%s", line)
+        local arr = futil.split(line, ",")
+        if #arr == 4 then
+            table.insert(top_rank_2018, {time = arr[1], userID = arr[2], nickName=arr[3], num=arr[4]})
+        end
+    end
+    table.sort(top_rank_2018, function(a, b)
+        return a.num > b.num
+    end)
+    local topList = {} 
+    local count = 0
+    local s_t = futil.getTimeByDate("2018-01-01 00:00:00")
+    local e_t = futil.getTimeByDate("2019-01-01 00:00:00")
+    for k, v in pairs(top_rank_2018) do
+        if count >= 100 then
+            break
+        end
+        local tmp_t = futil.getTimeByDate(v.time .. " 00:00:00")
+
+        if tmp_t < e_t and tmp_t >= s_t then
+            table.insert(topList, v)
+            count = count + 1
+        end
+    end
+    table.sort(topList, function(a, b) 
+        local a_t = futil.getTimeByDate(a.time.." 00:00:00")
+        local b_t = futil.getTimeByDate(b.time.." 00:00:00")
+        return a_t < b_t
+    end)
+    outfile = io.open("../out/top100_2018.txt", "w")
+    for k, v in pairs(topList) do
+        logger.debug("v:%s, year:%s, prefix:%s", table.tostring(v), audit.get_table_prefix_by_date(v.time))
+        local txt = string.format("%s,%s,%s,%s\n", v.time, v.userID, v.nickName, v.num)
+        outfile:write(txt)
+    end
+    outfile:close()
+end
 function audit.audit_game_record_detail()
     local filename = "../res/game_record_rank_2017.txt"
     --local infile = io.open(filename, "r")
@@ -825,11 +945,72 @@ function audit.audit_game_record_detail()
     table.sort(top_rank_2017, function(a, b)
         return a.num > b.num
     end)
+    local top100 = {}
+    local topList = {} 
+    local count = 0
+    local t = futil.getTimeByDate("2018-01-01 00:00:00")
     for k, v in pairs(top_rank_2017) do
-        logger.debug("v:%s", table.tostring(v))
+        if count >= 100 then
+            break
+        end
+        local tmp_t = futil.getTimeByDate(v.time .. " 00:00:00")
+
+        --if tmp_t < t and not top100[v.userID] then
+        if tmp_t < t then
+            --top100[v.userID] = true
+            table.insert(topList, v)
+            count = count + 1
+        end
     end
+    table.sort(topList, function(a, b) 
+        local a_t = futil.getTimeByDate(a.time.." 00:00:00")
+        local b_t = futil.getTimeByDate(b.time.." 00:00:00")
+        return a_t < b_t
+    end)
+    outfile = io.open("../out/top100_2017.txt", "w")
+    for k, v in pairs(topList) do
+        logger.debug("v:%s", table.tostring(v))
+        local txt = string.format("%s,%s,%s,%s\n", v.time, v.userID, v.nickName, v.num)
+        outfile:write(txt)
+    end
+    outfile:close()
 end
 
+function audit.audit_game_record_rank_2019()
+    logger.debug("audit.audit_game_record_rank")
+    local table_prefix = {"GameUserInfoLog", "MatchUserInfoLog", "NewRoomSelfUserInfoLog"}
+    local begin_time = futil.getTimeByDate("2019-01-06 00:00:00")
+    local end_time = futil.getTimeByDate("2020-01-01 00:00:00")
+    
+    --for _, prefix in pairs(table_prefix) do
+    local val_time = begin_time
+    local year = 2019
+    local db = "dla2019"
+    local rkey = string.format("%s_%s", const.redis_key.game_record_rank, year)
+    local filename = "../out/game_record_rank_2019.txt" 
+    local outfile = io.open(filename, "w")
+    while true do
+        local prefix = futil.dayStr(val_time, "_") 
+        logger.debug("prefix:%s", prefix)
+        local sql = string.format([[SELECT date_format(starttime, "%%Y-%%m-%%d") as d, userid, nickname, count(*) as s FROM (select userid,startTime,nickname from oss_gamelog%s.gameuserinfolog_%s union select userid,startTime,nickname from oss_gamelog%s.matchuserinfolog_%s union select userid,startTime,nickname from oss_gamelog%s.newroomselfuserinfolog_%s) group by date_format(starttime, "%%Y-%%m-%%d"), userid, nickname order by s desc  limit 10;]], year, prefix, year, prefix, year, prefix)
+        local rv = mysql_aux[db].exec_sql(sql) 
+        if rv and next(rv) then
+            for k, v in pairs(rv) do
+                logger.debug("row:%s", table.tostring(v))
+                outfile:write(string.format("%s,%s,%s,%s\n",v.d, v.userid,v.nickname,v.s))
+                outfile:flush()
+            end
+        end
+        val_time = val_time + 86400*7
+        if val_time > end_time then
+            break
+        end
+    end
+    outfile:close()
+    
+    logger.debug("audit_game_record_rank done !!")
+    
+end
 function audit.audit_game_record_rank_2018()
     logger.debug("audit.audit_game_record_rank")
     local table_prefix = {"GameUserInfoLog", "MatchUserInfoLog", "NewRoomSelfUserInfoLog"}
