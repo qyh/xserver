@@ -856,7 +856,7 @@ function audit.audit_game_record_detail_2019()
     local topList = {} 
     local count = 0
     local s_t = futil.getTimeByDate("2019-01-01 00:00:00")
-    local e_t = futil.getTimeByDate("2020-01-01 00:00:00")
+    local e_t = futil.getTimeByDate("2020-04-01 00:00:00")
     for k, v in pairs(top_rank_2019) do
         if count >= 100 then
             break
@@ -972,6 +972,16 @@ function audit.audit_game_record_detail()
         logger.debug("v:%s", table.tostring(v))
         local txt = string.format("%s,%s,%s,%s\n", v.time, v.userID, v.nickName, v.num)
         outfile:write(txt)
+        local year, prefix = audit.get_table_prefix_by_date(v.time)
+        local timestr = v.time .. " 00:00:00"
+        local end_t = futil.getTimeByDate(timestr) + 86400
+        local end_tstr = futil.dayStr(end_t, "-").." 00:00:00"
+        local sql = string.format([[ select userid,nickname,remark,starttime from gameuserinfolog_%s where starttime >= '%s' and starttime <'%s' and userid=%s union select userid, nickname, remark, starttime from matchuserinfolog_%s where starttime >= '%s' and starttime <'%s' and userid=%s union select userid, nickname, remark, starttime from newroomselfuserinfolog_%s where starttime >= '%s' and starttime <'%s' and userid=%s 
+        ]], prefix, timestr, end_tstr, v.userID, prefix, timestr, end_tstr, v.userID, prefix,timestr, end_tstr, v.userID )
+        logger.debug("sql:%s", sql)
+        local rv = mysql_aux['dla'..year].exec_sql(sql)
+        logger.debug("rv:%s", #rv)
+        break
     end
     outfile:close()
 end
@@ -980,7 +990,7 @@ function audit.audit_game_record_rank_2019()
     logger.debug("audit.audit_game_record_rank")
     local table_prefix = {"GameUserInfoLog", "MatchUserInfoLog", "NewRoomSelfUserInfoLog"}
     local begin_time = futil.getTimeByDate("2019-01-06 00:00:00")
-    local end_time = futil.getTimeByDate("2020-01-01 00:00:00")
+    local end_time = futil.getTimeByDate("2020-04-01 00:00:00")
     
     --for _, prefix in pairs(table_prefix) do
     local val_time = begin_time
