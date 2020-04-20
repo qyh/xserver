@@ -636,14 +636,17 @@ function audit.audit_convertip()
                 end
             end
         end
+        local arr = futil.split(ipName, " ")
+        return arr[1], arr[2]
     end
     --测试接口
-    local ip = '116.31.118.129' 
+    --[[
+    local ip = '100.116.222.141' 
     local rv = convertip(ip)
     logger.debug("rv:%s", table.tostring(rv))
     logger.debug("prov:%s, city:%s", getProvCity(rv.msg))
+    ]]
     --获取所有充值玩家IP，通过ip group by
-    --[[
     local sql = "select p.userid, u.regIp, count(*) as total from oss_zipai2018.paymentuser p left join oss_zipai2019.userdata u on p.userid=u.userid group by u.regIp order by total desc"
     local rv = mysql_aux["dla2018"].exec_sql(sql)
     if rv.badresult then
@@ -664,14 +667,13 @@ function audit.audit_convertip()
             local obj = convertip(v.regip)
             local prov, city = getProvCity(obj.msg)
             --写入文件：（ip,省,市,数量）
-            local txt = string.format("%s,%s,%s,%s\n", v.regIp, prov, city, v.total)
+            local txt = string.format("%s,%s %s,%s\n", v.regip, prov, city, v.total)
             logger.debug("%s", txt)
             outfile:write(txt)
             outfile:flush()
         end
     end
     outfile:close()
-    ]]
 end
 
 function audit.clear_game_record_rank()
