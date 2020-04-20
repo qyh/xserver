@@ -47,7 +47,7 @@ conf.mysql = {
         user = "qinyanhong_s1475177020277729",
         password = "wQOsikfKJLctvn1ctc",
         type = 1,
-        max_packet_size = 10 * 1024 * 1024,
+        max_packet_size = 100 * 1024 * 1024,
     },
     ["dla2018"] = {
         host = "1475177020277729-73404573.cn-shenzhen.datalakeanalytics.aliyuncs.com",
@@ -56,7 +56,16 @@ conf.mysql = {
         user = "qinyanhong_s1475177020277729",
         password = "wQOsikfKJLctvn1ctc",
         type = 1,
-        max_packet_size = 10 * 1024 * 1024,
+        max_packet_size = 100 * 1024 * 1024,
+    },
+    ["dla2019"] = {
+        host = "1475177020277729-73404573.cn-shenzhen.datalakeanalytics.aliyuncs.com",
+        port = "10000",
+        database = "oss_gamelog2019",
+        user = "qinyanhong_s1475177020277729",
+        password = "wQOsikfKJLctvn1ctc",
+        type = 1,
+        max_packet_size = 100 * 1024 * 1024,
     },
     --[[
     ["2017_118"] = {
