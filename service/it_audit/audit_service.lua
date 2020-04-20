@@ -616,10 +616,57 @@ function audit.audit_convertip()
         end
         return nil
     end
+    --获取ip所在省市
+    local function getProvCity(ipName) 
+        local city_name = require "city_name"
+        for prov, citys in pairs(city_name) do
+            if string.find(ipName, prov) then
+                for _, city in pairs(citys) do
+                    if string.find(ipName, city) then
+                        return prov, city
+                    end
+                end
+                if #citys > 0 then
+                    local arr = futil.split(ipName, " ")
+                    return prov, arr[2]
+                else
+                    return prov, prov
+                end
+            end
+        end
+    end
     --测试接口
+    --[[
     local ip = '111.194.236.48' 
     local rv = convertip(ip)
     logger.debug("rv:%s", table.tostring(rv))
+    logger.debug("prov:%s, city:%s", getProvCity(rv.msg))
+    ]]
+    --获取所有充值玩家IP，通过ip group by
+    local sql = "select p.userid, u.regIp, count(*) as total from oss_zipai2018.paymentuser p left join oss_zipai2019.userdata u on p.userid=u.userid group by u.regIp order by total desc"
+    local rv = mysql_aux["dla2018"].exec_sql(sql)
+    if rv.badresult then
+        logger.err("查询ip失败")
+        return
+    end
+    local filename = "../out/ip_counter.txt"
+    local outfile = io.open(filename, "w")
+    if not outfile then
+        logger.err("打开文件失败")
+        return
+    end
+    for k, v in pairs(rv) do
+        if v.regIp and #v.regIp > 0 then
+            local obj = convertip(v.regIp)
+            local prov, city = getProvCity(obj.msg)
+            --写入文件：（ip,省,市,数量）
+            local txt = string.format("%s,%s,%s,%s\n", v.regIp, prov, city, v.total)
+            logger.debug("%s", txt)
+            outfile:write(txt)
+            outfile:flush()
+        end
+    end
+    outfile:close()
 end
 
 function audit.clear_game_record_rank()
