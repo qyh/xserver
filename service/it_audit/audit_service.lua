@@ -1675,13 +1675,15 @@ function audit.audit_recharge_detail()
     end
     local begin_t = os.time()
     logger.debug("get mall info success")
-    local filename = "../out/recharge_detail.txt" 
+    local filename = "../out/recharge_detail.txt"  --明细输出文件
+    local userTotal = "../out/user_total.txt"      --用户汇总（记录 充值金币,房卡总额和首充时间，最后充值时间）
     local sep = ","
     local outfile = io.open(filename, "w")
     if not outfile then
         logger.err("open %s fail", filename)
         return
     end
+    local outusertotal = io.open(userTotal, "w")
     local title = "账号ID"..sep.."名称"..sep.."充值时间"..sep.."充值金额"..sep.."去向".."\n"
     outfile:write(title)
     --取出充值top10000大R用户ID
@@ -1690,6 +1692,11 @@ function audit.audit_recharge_detail()
     if top10000users then
         for _, v in pairs(top10000users) do
             userID = v.userid
+            local totalGold = 0
+            local totalCard = 0
+            local firstTime = os.time()
+            local lastTime = 0
+            local totalTxt = ""
             sql = string.format([[
             select userid,nickname,username, notifytime, mallid,totalfee, amount from (
             select * from oss_zipai2017.onlinepaynotify union
@@ -1707,10 +1714,19 @@ function audit.audit_recharge_detail()
                         if #arr == 2 then
                             if tonumber(arr[1]) == 0 then
                                 local txt = string.format("%s,%s,%s,%s,%s\n",userID, detail.nickname,string.sub(detail.notifytime, 1,19),detail.totalfee,"金币")
+                                totalGold = totalGold + tonumber(arr[2])
                                 outfile:write(txt)
                             elseif tonumber(arr[1]) == 107 then
                                 local txt = string.format("%s,%s,%s,%s,%s\n",userID, detail.nickname,string.sub(detail.notifytime, 1,19),detail.totalfee,"房卡")
+                                totalCard = totalCard + tonumber(arr[2])
                                 outfile:write(txt)
+                            end
+                            local _t = futil.getTimeByDate(string.sub(detail.notifytime, 1,19)) 
+                            if _t > lastTime then
+                                lastTime = _t
+                            end
+                            if _t < firstTime then
+                                firstTime = _t 
                             end
                         else
                             logger.err("gainGoods:%s fail", mallItem.gainGoods)
@@ -1723,9 +1739,13 @@ function audit.audit_recharge_detail()
                 logger.err("user %s get detail faild", userID)
             end
             outfile:flush()
+            totalTxt = string.format("%s,%s,%s,%s,%s\n", userID, futil.nowstr(firstTime), futil.nowstr(lastTime), totalGold, totalCard)
+            logger.debug("totalTxt:%s", totalTxt)
+            outusertotal:write(totalTxt)
+            outusertotal:flush()
         end
     end
-    
+    outusertotal:close() 
     outfile:close()
     local end_t = os.time()
     logger.debug("audit_recharge_detail done !! take time:%s sec", end_t - begin_t)

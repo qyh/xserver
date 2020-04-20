@@ -33,6 +33,9 @@ function futil.repl(s, params)
 end
 
 function futil.nowstr(now)
+    if now == 0 then
+        return now
+    end
 	return os.date("%Y-%m-%d %H:%M:%S", now or os.time())
 end
 
