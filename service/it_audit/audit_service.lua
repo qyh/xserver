@@ -613,6 +613,8 @@ function audit.audit_convertip()
         if ok then
             local obj = json.decode(rv)
             return obj 
+        else
+            logger.err("converip fail:%s", tostring(rv))
         end
         return nil
     end
@@ -636,13 +638,12 @@ function audit.audit_convertip()
         end
     end
     --测试接口
-    --[[
-    local ip = '111.194.236.48' 
+    local ip = '116.31.118.129' 
     local rv = convertip(ip)
     logger.debug("rv:%s", table.tostring(rv))
     logger.debug("prov:%s, city:%s", getProvCity(rv.msg))
-    ]]
     --获取所有充值玩家IP，通过ip group by
+    --[[
     local sql = "select p.userid, u.regIp, count(*) as total from oss_zipai2018.paymentuser p left join oss_zipai2019.userdata u on p.userid=u.userid group by u.regIp order by total desc"
     local rv = mysql_aux["dla2018"].exec_sql(sql)
     if rv.badresult then
@@ -655,9 +656,12 @@ function audit.audit_convertip()
         logger.err("打开文件失败")
         return
     end
+    logger.debug("get record count:%s", #rv)
     for k, v in pairs(rv) do
-        if v.regIp and #v.regIp > 0 then
-            local obj = convertip(v.regIp)
+        logger.debug("v:%s", futil.toStr(v))
+        if v.regip and #v.regip > 0 then
+            logger.debug("converting :%s", v.regip)
+            local obj = convertip(v.regip)
             local prov, city = getProvCity(obj.msg)
             --写入文件：（ip,省,市,数量）
             local txt = string.format("%s,%s,%s,%s\n", v.regIp, prov, city, v.total)
@@ -667,6 +671,7 @@ function audit.audit_convertip()
         end
     end
     outfile:close()
+    ]]
 end
 
 function audit.clear_game_record_rank()
