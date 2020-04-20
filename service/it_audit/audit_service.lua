@@ -1887,7 +1887,6 @@ function audit.audit_goldcoin_log()
             end
             outfile:flush()
         end
-        break
     end
     outfile:close()
     logger.debug("audit goldcoin log done !!")
