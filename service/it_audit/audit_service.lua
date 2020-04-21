@@ -229,6 +229,7 @@ function audit.audit_base_info()
     ]]
 end
 
+
 function audit.audit_pay_user()
     logger.debug("audit.audit_pay_user")
     local rank_user = require "recharge_rank"
@@ -1805,6 +1806,47 @@ function audit.audit_recharge_detail()
     logger.debug("audit_recharge_detail done !! take time:%s sec", end_t - begin_t)
 end
 
+function audit.audit_total_roomcard()
+    local begin_time = futil.getTimeByDate("2017-08-01 00:00:00")   --2017.08 是最早的数据了,之前的数据没有了
+    local end_time = futil.getTimeByDate("2020-04-01 00:00:00")
+    local val_time = begin_time
+    local filename = "../out/total_room_card.txt"
+    local outfile = io.open(filename, "w")
+    if not outfile then
+        return
+    end
+    total_room_card = {}
+    while true do
+        local prefix = futil.monthStr(val_time, "_")
+        local year = futil.yearStr(val_time)
+        if tonumber(year) > 2019 then
+            year = 2019
+        end
+        logger.debug("deal with :%s", prefix)
+        local sql = string.format([[
+        select userid, sum(changecurrency) as total from oss_zipai%s.roomcardlog_%s where remarkID<>14  and changecurrency > 0 and userid in (
+select userid from oss_zipai2018.paymenttop10000
+) group by userid
+        ]], year, prefix)
+        local rv = mysql_aux["dla2018"].exec_sql(sql)
+        if rv and next(rv) and not rv.badresult then
+            for k, row in pairs(rv) do
+                total_room_card[row.userid] = total_room_card[row.userid] or 0
+                total_room_card[row.userid] = total_room_card[row.userid] + row.total
+            end
+        end
+        val_time = futil.get_next_month(val_time)
+        if val_time >= end_time then
+            break
+        end
+    end
+    for userid, num in pairs(total_room_card) do
+        local txt = string.format("%s,%s\n", userid, num)
+        outfile:write(txt)
+    end
+    outfile:close()
+    logger.debug("audit total room card done !!")
+end
 function audit.audit_goldcoin_log()
     logger.debug("audit_goldcoin_log")
     --获取top10000大R信息 
