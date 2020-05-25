@@ -697,21 +697,22 @@ end
 
 function audit.audit_test()
     logger.debug("audit.audit_test")
-    local rank_user = require "recharge_rank" 
-    if not (rank_user and next(rank_user)) then
-        logger.err("rank user empty")
+    local sql = string.format([[
+    select * from (
+select * from oss_zipai2017.onlinepaynotify union
+select * from oss_zipai2018.onlinepaynotify union
+select * from oss_zipai2019.onlinepaynotify where notifytime < '2020-04-01 00:00:00'
+) where userid in (select userid from oss_zipai2018.paymenttop10000)
+    ]]) 
+    logger.debug("sql:%s", sql)
+    local rv = mysql_aux["dla2018"].exec_sql(sql)
+    if rv.badresult then
+        logger.err("query fail:%s", futil.toStr(rv))
         return
     end
-    local num = 0
-    for userID, amount in pairs(rank_user) do
-        local uif = user.get_user_info(userID) or {}
-        uif.winCount = uif.winCount or 0
-        uif.loseCount = uif.loseCount or 0
-        if uif.winCount == 0 and uif.loseCount == 0 then
-            num = num + 1
-        end
+    if rv and next(rv) then
+        logger.debug("query success get count:%s", #rv)
     end
-    logger.debug("total:10000, un process:%s", num)
     --[[
     local r = redis_aux.db(1):set("a", "aaaaaa")
     r = redis_aux.db(2):set("a", "bbbbbbbbbb")
@@ -1849,22 +1850,6 @@ select userid from oss_zipai2018.paymenttop10000
 end
 function audit.audit_goldcoin_log()
     logger.debug("audit_goldcoin_log")
-    --获取top10000大R信息 
-    local sql = "select userid, sum from oss_zipai2018.paymenttop10000"
-    local rank_user = mysql_aux["dla2018"].exec_sql(sql)
-    if rank_user.badresult then
-        logger.err("get top10000 user fail")
-        return
-    end
-    local tmp = {}
-    for _, user in pairs(rank_user) do
-        userID = user.userid
-        table.insert(tmp, {userID = userID, amount = user.sum})
-    end
-    --对充值量由大到小排序
-    table.sort(tmp, function(a, b)
-        return a.amount > b.amount
-    end)
     local begin_time = futil.getTimeByDate("2017-08-01 00:00:00")   --2017.08 是最早的数据了,之前的数据没有了
     local end_time = futil.getTimeByDate("2020-04-01 00:00:00")
     local table_prefix = {"GoldCoinLog","RoomCardLog"}
@@ -1875,61 +1860,53 @@ function audit.audit_goldcoin_log()
     local title = "账号ID"..sep.."名称"..sep.."消耗时间"..sep.."消耗币种"..sep.."消耗数量".."\n"
     outfile:write(title)
     --查询前100消耗明细
-    for i=1, 100 do
-        local u = tmp[i]
-        if u then
-            local userID = u.userID
-            if not outfile then
-                logger.err("open out file fail:%s", filename)
-                break
+    local val_time = begin_time
+    while true do
+        for _, prefix in pairs(table_prefix) do
+            local year = futil.yearStr(val_time)
+            if tonumber(year) > 2019 then
+                year = 2019
             end
-            logger.debug("begin export goldcoin log userID:%s, amount:%s, idx:%s", u.userID, u.amount, i)
-            local val_time = begin_time
-            while true do
-                for _, prefix in pairs(table_prefix) do
-                    local year = futil.yearStr(val_time)
-                    if tonumber(year) > 2019 then
-                        year = 2019
-                    end
-                    local tname = string.format("%s.%s_%s", "oss_zipai"..year,prefix, futil.monthStr(val_time, "_"))
-                    --设置查询的年份
-                    local db = "dla"..year
-                    if db then
-                        logger.debug("query user:%s gold coin log from %s.%s", userID, db, tname)
-                        --获取明细
-                        local sql = string.format("select * from %s where userID=%s ", tname, userID)
-                        local rv = mysql_aux[db].exec_sql(sql)
-                        if rv.badresult then
-                            logger.err("table %s.%s may not exists skip:%s", db, tname, futil.toStr(rv))
-                            break
-                        end
-                        logger.debug("get detail count:%s ,userID:%s", #rv, userID)
-                        if rv and next(rv) then
-                            for k, v in pairs(rv) do
-                                if v.changecurrency < 0 and (v.goodsid == 107 or v.goodsid == 0) then
-                                    local goodsname = "金币"
-                                    if v.goodsid == 107 then
-                                        goodsname = "对战卡"
-                                    end
-                                    local txt = tostring(v.userid)..sep..v.nickname..sep..v.time..sep..goodsname..sep..tostring(v.changecurrency).."\n"
-                                    outfile:write(txt)
-                                end
-                            end
-                        else
-                            logger.debug("query user:%s from table %s.%s done", userID, db, tname)
-                            break
-                        end
-                    end
+            local tname = string.format("%s.%s_%s", "oss_zipai"..year,prefix, futil.monthStr(val_time, "_"))
+            --设置查询的年份
+            local db = "dla"..year
+            if db then
+                logger.debug("query gold coin log from %s.%s", db, tname)
+                --获取明细
+                local sql = string.format("select * from %s where userid in (select userid from oss_zipai2018.paymenttop10000_2 order by sum desc limit 100)", tname)
+                local rv = mysql_aux[db].exec_sql(sql)
+                if rv.badresult then
+                    logger.err("table %s.%s may not exists skip:%s", db, tname, futil.toStr(rv))
+                    break
                 end
-                --移到下一个月的表
-                val_time = futil.get_next_month(val_time)
-                if val_time >= end_time then
+                logger.debug("get detail count:%s", #rv)
+                if rv and next(rv) then
+                    for k, v in pairs(rv) do
+                        local goodsname = "其他"
+                        if v.goodsid == 107 or v.goodsid == 0 then
+                            if v.goodsid == 0 then
+                                goodsname = "金币"
+                            end
+                            if v.goodsid == 107 then
+                                goodsname = "对战卡"
+                            end
+                        end
+                        local txt = tostring(v.userid)..sep..v.nickname..sep..v.time..sep..goodsname..sep..tostring(v.changecurrency).."\n"
+                        outfile:write(txt)
+                    end
+                else
+                    logger.debug("query from table %s.%s done", db, tname)
                     break
                 end
             end
-            outfile:flush()
+        end
+        --移到下一个月的表
+        val_time = futil.get_next_month(val_time)
+        if val_time >= end_time then
+            break
         end
     end
+    outfile:flush()
     outfile:close()
     logger.debug("audit goldcoin log done !!")
 end
