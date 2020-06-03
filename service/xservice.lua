@@ -6,6 +6,7 @@ local futil = require "futil"
 local const = require "const"
 local mt_lock = require "mt_lock"
 local https = require "https"
+local mysql_aux = require "mysql_aux"
 require "tostring"
 require "skynet.manager"
 local CMD = {}
@@ -44,6 +45,18 @@ function CMD.convertip()
     else
         logger.err("request fail")
     end
+end
+
+function CMD.test()
+    logger.debug("CMD.test")
+    logger.debug("CMD.test end")
+    skynet.fork(function()
+        while true do
+            local res = mysql_aux.localhost.exec_sql("select * from my_test")
+            logger.debug("res:%s", futil.toStr(res))
+            skynet.sleep(100)
+        end
+    end)
 end
 
 skynet.init(function()

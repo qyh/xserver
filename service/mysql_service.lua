@@ -7,7 +7,8 @@ local CMD = {}
 local mysql_conf = skynet.getenv("mysql_conf")
 local json = require "cjson"
 local futil = require "futil"
-local dbconf = require "db.db"
+local db = skynet.getenv("db") or "db"
+local dbconf = require ("db."..db)
 local agents = {}
 
 function CMD.exec_sql(session, dbname, sql)

@@ -13,11 +13,11 @@ conf.redis = {
 
 conf.mysql = {
     localhost = {
-        host = "192.168.82.101",
+        host = "192.168.82.68",
         port = "3306",
-        database = "Zipai",
+        database = "imserver",
         user = "root",
-        password = "123",
+        password = "root",
         type = 0,
         max_packet_size = 10 * 1024 * 1024,
     },
