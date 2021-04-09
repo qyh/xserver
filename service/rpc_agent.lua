@@ -5,7 +5,8 @@ local sprotoloader = require "sprotoloader"
 local codec = require "codec"
 local logger = require "logger"
 local futil = require "futil"
-local proto = require "test_proto"
+local proto_loader = require "proto_loader"
+local proto = proto_loader.load("test")
 local sproto = require "sproto"
 local host = sproto.new(proto.c2s):host "package"
 local send_request = host:attach(sproto.new(proto.s2c))
@@ -35,8 +36,10 @@ function REQUEST:quit()
 	skynet.call(WATCHDOG, "lua", "close", client_fd)
 end
 
-function REQUEST:foobar()
-    logger.debug('recv foobar:%s', futil.toStr(self))
+function REQUEST:foobar(args)
+    logger.debug('rpc agent recv foobar:%s', futil.toStr(self))
+    logger.debug('session:%s', futil.toStr(session))
+    logger.debug('args:%s', futil.toStr(args))
     return {ok = true}
 end
 
@@ -59,7 +62,7 @@ skynet.register_protocol {
 	unpack = function (msg, sz)
         local req = skynet.tostring(msg, sz)
         msg = codec.base64_decode(req)
-		return host:dispatch(msg, sz)
+		return host:dispatch(msg, sz) -- return 'REQUEST', data
 	end,
 	dispatch = function (fd, _, type, ...)
 		assert(fd == client_fd)	-- You can use fd to reply message
