@@ -1,12 +1,14 @@
 local skynet = require "skynet"
-local socketchannel	= require "skynet.socketchannel"
+local socketchannel    = require "skynet.socketchannel"
 local crypt = require "skynet.crypt"
 local socket = require "skynet.socket"
 local codec = require "codec"
 local logger = require "logger"
 local futil = require "futil"
 
-local proto = require "test_proto"
+--local proto = require "test_proto"
+local proto_loader = require "proto_loader"
+local proto = proto_loader.load("test")
 local sproto = require "sproto"
 local host = sproto.new(proto.s2c):host "package"
 local request = host:attach(sproto.new(proto.c2s))
@@ -17,7 +19,7 @@ local sender = {
     session = 0 
 }
 local function dispatch(so)
-	local text = so:read(2)
+    local text = so:read(2)
     if not text then
         logger.debug('dispatch read text: fail')
         return nil, false, nil
@@ -26,7 +28,7 @@ local function dispatch(so)
     local msgbase64 = so:read(s)
     local msg = codec.base64_decode(msgbase64)
     local t, session, resp = host:dispatch(msg)
-	return session, true, resp 
+    return session, true, resp 
 end
 function CMD.request(name, data)
     sender.session = sender.session + 1
@@ -69,17 +71,17 @@ skynet.init(function()
 end)
 
 skynet.start(function()
-	skynet.dispatch('lua', function(session, address, cmd, ...)
-		local f = CMD[cmd]
-		if f then
-			if session > 0 then
-				skynet.ret(skynet.pack(f(...)))
-			else
-				f(...)
-			end
-		else
-			logger.err('ERROR: Unknown command:%s', tostring(cmd))
-		end
-	end)
+    skynet.dispatch('lua', function(session, address, cmd, ...)
+        local f = CMD[cmd]
+        if f then
+            if session > 0 then
+                skynet.ret(skynet.pack(f(...)))
+            else
+                f(...)
+            end
+        else
+            logger.err('ERROR: Unknown command:%s', tostring(cmd))
+        end
+    end)
 end)
 
