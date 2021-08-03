@@ -3,13 +3,13 @@ name = "it_audit"
 --logger = "../log/"..name..".log" 
 logpath = "../log"
 harbor = 0
-start = "main_it_audit"
+start = "it_audit"
 bootstrap = "snlua bootstrap"	-- The service for bootstrap
-luaservice = "./service/?.lua;../server/?.lua;./examples/login/?.lua;"
-	.."../service/?.lua;../service/it_audit/?.lua;"
+luaservice = "./service/?.lua;../src/app/it_audit/?.lua;./examples/login/?.lua;"
+	.."../src/service/?.lua;../src/service/it_audit/?.lua;"
 lualoader = "lualib/loader.lua"
 cpath = "./cservice/?.so;../luaclib/?.so;"
-preload = '../server/preload.lua'
+preload = '../src/app/it_audit/preload.lua'
 redis_conf = [[{
 	"host":"127.0.0.1",
 	"port": 6379
