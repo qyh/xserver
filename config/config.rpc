@@ -1,0 +1,15 @@
+thread = 8
+name = "rpc"
+logger = "../log/"..name.."_core"..".log" 
+logpath = "../log"
+harbor = 0
+start = name 
+bootstrap = "snlua bootstrap"    -- The service for bootstrap
+luaservice = "./service/?.lua;".."../src/app/"..name.."/?.lua;"
+	.."../src/service/?.lua;"
+lualoader = "lualib/loader.lua"
+cpath = "./cservice/?.so;../luaclib/?.so;"
+preload = '../src/app/'..name..'/preload.lua'
+redis = "test" 
+db = "test"
+--daemon="../run/"..name..".pid"
