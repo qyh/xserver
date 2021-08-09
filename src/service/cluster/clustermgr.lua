@@ -114,7 +114,7 @@ function CMD.query_node(nodetype)
         table.insert(nodenames, k)
     end
     local balance = node_balance[nodetype] or 1
-    node_balance[nodetype] = balance + 1 > #nodes and 1 or balance + 1
+    node_balance[nodetype] = balance + 1 > #nodenames and 1 or balance + 1
     return nodenames[balance]
 end
 
