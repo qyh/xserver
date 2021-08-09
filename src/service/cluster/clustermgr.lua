@@ -15,9 +15,9 @@ local db = nil
 local node_config = {} 
 local all_conf = {}
 for k, v in pairs(dbconf.redis) do
-	if conf_name == k then
-		redis_config = v
-	end
+    if conf_name == k then
+        redis_config = v
+    end
 end
 local CMD = {}
 local clusterkey = "cluster_config"
@@ -89,19 +89,34 @@ local function update_nodes()
     skynet.timeout(500, update_nodes)
 end
 
+local function bracast_self()
+    local tmp_conf = all_conf
+    for k,v in pairs(tmp_conf) do
+        if k ~= nodename then
+            cluster.call(k, "@clustermgr", "add_node", nodename, nodeip..":"..nodeport) 
+        end
+    end
+end
+
 local function connect_redis()
-	if redis_config then
-		db = redis.connect(redis_config)
-		if db then
-			logger.debug('redis connect success')
-		else
-			logger.err('redis connect failed:%s', table.tostring(redis_config))
-		end
-	else
-		logger.err("redis_config nil, exist")
+    if redis_config then
+        db = redis.connect(redis_config)
+        if db then
+            logger.debug('redis connect success')
+        else
+            logger.err('redis connect failed:%s', table.tostring(redis_config))
+        end
+    else
+        logger.err("redis_config nil, exist")
         return false
-	end
+    end
     return true
+end
+
+function CMD.add_node(node, addr)
+    logger.info("on add_node:%s,%s", node, addr)
+    all_conf[node] = addr
+    cluster.reload(all_conf)
 end
 
 function CMD.query_node(nodetype)
@@ -119,24 +134,25 @@ function CMD.query_node(nodetype)
 end
 
 skynet.start(function()
-	skynet.dispatch('lua', function(session, address, cmd, ...)
-		local f = CMD[cmd]
-		if f then
-			if session > 0 then
-				skynet.ret(skynet.pack(f(...)))
-			else
-				f(...)
-			end
-		else
-			logger.err('ERROR: Unknown command:%s', tostring(cmd))
-		end
-	end)
+    skynet.dispatch('lua', function(session, address, cmd, ...)
+        local f = CMD[cmd]
+        if f then
+            if session > 0 then
+                skynet.ret(skynet.pack(f(...)))
+            else
+                f(...)
+            end
+        else
+            logger.err('ERROR: Unknown command:%s', tostring(cmd))
+        end
+    end)
     if not connect_redis() then
         skynet.exit()
     end
     update_nodes()
     cluster.open(nodename)
     skynet.register(".clustermgr")
-	
+    cluster.register("clustermgr")
+    bracast_self() 
 end)
 

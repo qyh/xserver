@@ -15,7 +15,7 @@ local db = {}
 local command = {}
 
 local function send_client(fd, msg)
-    return clustermc.send(node_type.connector, "@xwatchdog", "socket","send_client", fd, msg)
+    local ok, err = clustermc.send(node_type.connector, "@xwatchdog", "send_client", fd, msg)
 end
 
 function command.get(key)
@@ -45,8 +45,7 @@ function command.request(fd, uid, msg, sz)
             local r = f(data)
             if response then
                 local str = response(r)
-                --send_client(fd, "hello")
-                send_client(fd, netpack.pack(str))
+                send_client(fd, str)
             end
         else
             logger.err("no %s fuction", cmd)
@@ -58,7 +57,8 @@ skynet.start(function()
     skynet.dispatch("lua", function(session, address, cmd, ...)
         local f = command[cmd]
         if f then
-            skynet.ret(skynet.pack(f(...)))
+            --skynet.ret(skynet.pack(f(...)))
+            f(...)
         else
             logger.err(string.format("Unknown command %s", tostring(cmd)))
         end

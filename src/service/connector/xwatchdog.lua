@@ -50,7 +50,7 @@ function CMD.close(fd)
     close_agent(fd)
 end
 
-function SOCKET.send_client(fd, msg) 
+function CMD.send_client(fd, msg) 
     logger.info("send_client:%s,%s", fd, msg)
     if fd > 0 then
         return send_package(fd, msg)
@@ -61,9 +61,10 @@ end
 local function dispatch_msg(fd, msg, sz) 
     local nodetype = 2
     local uid = 1
-    local str = netpack.tostring(msg, sz)
-    logger.info("dispatch_msg:%s,%s", fd, msg)
-    clustermc.send(nodetype, "@dispatcher", "request", fd, uid, str, #str)     
+    local str = skynet.tostring(msg, sz)
+    --logger.info("dispatch_msg:%s,%s", fd, str)
+    clustermc.send(nodetype, "@dispatcher", "request", fd, uid, str, sz)     
+    skynet.trash(msg, sz)
 end
 
 skynet.register_protocol {
@@ -90,7 +91,10 @@ skynet.start(function()
             -- socket api don't need return
         else
             local f = assert(CMD[cmd])
-            skynet.ret(skynet.pack(f(subcmd, ...)))
+            local r = f(subcmd, ...)
+            if session > 0 then
+                skynet.ret(skynet.pack(r))
+            end
         end
     end)
 
