@@ -5,17 +5,13 @@ local futil = require "futil"
 local clustermc = require "clustermc"
 local function boot()
     skynet.newservice("logservice")
+    local sdb = skynet.newservice("simpledb")
     skynet.newservice("clustermgr") 
-    skynet.timeout(200, function()
-        --调用远程服务要在服务名前加'@'符号
-        local v = clustermc.call(1, "@sdb", "GET", "a")
-        logger.info("get a :%s", v)
-        clustermc.send(1, "@sdb", "SET", "a", "setfromcluster2")
-        local v = clustermc.call(1, "@sdb", "GET", "a")
-        logger.info("get a :%s", v)
-        local v = clustermc.call(1, "@sdb", "GET", "b")
-        logger.info("get b :%s", v)
-    end)
+	print(skynet.call(sdb, "lua", "SET", "a", "cluster3a"))
+	print(skynet.call(sdb, "lua", "SET", "b", "cluster3b"))
+	print(skynet.call(sdb, "lua", "GET", "a"))
+	print(skynet.call(sdb, "lua", "GET", "b"))
+    clustermc.register("sdb", sdb)
 end
 skynet.start(function()
     local ok, res = xpcall(boot, futil.handle_err)

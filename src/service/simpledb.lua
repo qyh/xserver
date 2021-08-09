@@ -1,4 +1,5 @@
 local skynet = require "skynet"
+local logger = require "logger"
 require "skynet.manager"	-- import skynet.register
 local db = {}
 
@@ -9,6 +10,7 @@ function command.GET(key)
 end
 
 function command.SET(key, value)
+    logger.debug("SET %s %s", key, value)
 	local last = db[key]
 	db[key] = value
 	return last

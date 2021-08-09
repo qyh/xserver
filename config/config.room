@@ -7,7 +7,7 @@ start = "main"
 bootstrap = "snlua bootstrap"    -- The service for bootstrap
 luaservice = "./service/?.lua;".."../src/app/"..name.."/?.lua;"
 	.."../src/service/?.lua;"
-    .."../src/service/lkcluster/?.lua;"
+    .."../src/service/cluster/?.lua;"
     .."./lualib/compat10/?.lua;"
     .."../src/service/room/?.lua;"
 lualoader = "lualib/loader.lua"
@@ -21,7 +21,6 @@ db = "test"
 nodename = "room1"
 nodetype = 2 
 nodeip = "127.0.0.1"
-nodeport = "50602"
+nodeport = "50606"
 nodeid = 2 
-nodegroup = "default"
 --cluster config end
