@@ -1,5 +1,5 @@
 local skynet = require "skynet"
-local cluster = require "skynet.cluster"
+local cluster = require "xcluster"
 local redis = require "skynet.db.redis"
 local json = require "cjson"
 local logger = require "logger"

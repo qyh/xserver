@@ -1,5 +1,5 @@
 local skynet = require "skynet"
-local cluster = require "skynet.cluster"
+local cluster = require "xcluster"
 local logger = require "logger"
 local mc = {
     register = cluster.register
