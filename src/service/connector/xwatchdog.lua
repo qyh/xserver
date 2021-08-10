@@ -63,7 +63,7 @@ local function dispatch_msg(fd, msg, sz)
     local uid = 1
     local str = skynet.tostring(msg, sz)
     --logger.info("dispatch_msg:%s,%s", fd, str)
-    clustermc.send(nodetype, "@dispatcher", "request", fd, uid, str, sz)     
+    clustermc.call(nodetype, "@dispatcher", "request", fd, uid, str, sz)     
     skynet.trash(msg, sz)
 end
 
@@ -87,8 +87,11 @@ skynet.start(function()
     skynet.dispatch("lua", function(session, source, cmd, subcmd, ...)
         if cmd == "socket" then
             local f = SOCKET[subcmd]
-            f(...)
-            -- socket api don't need return
+            if session > 0 then
+                skynet.ret(skynet.pack(f(...)))
+            else
+                f(...)
+            end
         else
             local f = assert(CMD[cmd])
             local r = f(subcmd, ...)
