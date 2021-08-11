@@ -5,6 +5,11 @@ local logger = require "logger"
 local json = require "cjson"
 local futil = require "futil"
 local netpack = require "skynet.netpack"
+local proto_loader = require "proto_loader"
+local proto = proto_loader.load("test")
+local sproto = require "sproto"
+local host = sproto.new(proto.c2s):host "package"
+local error_code = require "error_code"
 
 local CMD = {}
 local SOCKET = {}
@@ -50,20 +55,48 @@ function CMD.close(fd)
     close_agent(fd)
 end
 
-function CMD.send_client(fd, msg) 
-    logger.info("send_client:%s,%s", fd, msg)
+--msg 为proto消息
+local function pack_response(node_type, err_code, msg) 
+    --打包回应消息
+    --第1个字节为结点类型
+    --第2~3个字结为错误码
+    --后面跟proto消息
+    msg = msg or ""
+    err_code = err_code & 0xFFFF
+    local str = string.char(node_type) 
+    str = str..string.char(err_code >> 8)..string.char(err_code & 0x00FF)
+    return str..msg
+end
+
+function CMD.send_client(node_type, fd, msg) 
+    logger.info("send_client:%s,%s, nodetype:%s", fd, msg, node_type)
     if fd > 0 then
-        return send_package(fd, msg)
+        local m = pack_response(node_type, error_code.OK, msg)
+        return send_package(fd, m)
     end
     return nil
 end
 
 local function dispatch_msg(fd, msg, sz) 
-    local nodetype = 2
     local uid = 1
     local str = skynet.tostring(msg, sz)
     --logger.info("dispatch_msg:%s,%s", fd, str)
-    clustermc.call(nodetype, "@dispatcher", "request", fd, uid, str, sz)     
+    --解析消息头
+    --第一个字节为结点类型(node_type.lua)
+    local nodetype = str:byte(1)
+    local protoMsg = str:sub(2)
+    local ok,err = clustermc.send(nodetype, "@dispatcher", "request", fd, uid, protoMsg, #protoMsg)     
+    if not ok then
+        local _, cmd, data, response = host:dispatch(protoMsg, #protoMsg)
+        logger.err("call %s failed, data:%s", cmd, json.encode(data))
+        if response then
+            local res_msg = pack_response(nodetype, error_code.NODE_NOT_FOUND, ret)
+            send_package(fd, res_msg)
+
+        end
+    else
+        logger.info("clustermc call node:%s OK", nodetype)
+    end
     skynet.trash(msg, sz)
 end
 
@@ -74,8 +107,8 @@ skynet.register_protocol {
         return msg, sz 
     end,
     dispatch = function(fd, _, msg, sz)
-        skynet.ignoreret()
-        skynet.trace()
+        --skynet.ignoreret()
+        --skynet.trace()
         local ok, err = xpcall(dispatch_msg, futil.handle_err, fd, msg, sz)
         if not ok then
             logger.err("dispatch_msg failed fd:%s:%s", fd, err)

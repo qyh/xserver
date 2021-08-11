@@ -11,11 +11,12 @@ require "tostring"
 require "skynet.manager"    -- import skynet.register
 local host = sproto.new(proto.c2s):host "package"
 local db = {}
+local my_type = node_type.room
 
 local command = {}
 
 local function send_client(fd, msg)
-    local ok, err = clustermc.call(node_type.connector, "@xwatchdog", "send_client", fd, msg)
+    local ok, err = clustermc.call(node_type.connector, "@xwatchdog", "send_client", my_type, fd, msg)
 end
 
 function command.get(key)
