@@ -1,0 +1,17 @@
+thread = 8
+name = "client"
+logger = "../log/"..name.."_core"..".log" 
+logpath = "../log"
+harbor = 0
+start = "main" 
+bootstrap = "snlua bootstrap"    -- The service for bootstrap
+luaservice = "./service/?.lua;".."../src/app/"..name.."/?.lua;"
+	.."../src/service/?.lua;"
+    .."../src/service/client/?.lua;"
+    .."../src/service/cluster/?.lua;"
+lualoader = "lualib/loader.lua"
+cpath = "./cservice/?.so;../luaclib/?.so;"
+preload = '../src/app/'..name..'/preload.lua'
+redis = "test" 
+db = "test"
+--daemon="../run/"..name..".pid"

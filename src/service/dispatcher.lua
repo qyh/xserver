@@ -52,6 +52,7 @@ function command.request(fd, uid, msg, sz)
             logger.err("no %s fuction", cmd)
         end
     end
+    return "OK" 
 end
 
 skynet.start(function()

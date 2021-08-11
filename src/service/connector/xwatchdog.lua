@@ -85,7 +85,7 @@ local function dispatch_msg(fd, msg, sz)
     --第一个字节为结点类型(node_type.lua)
     local nodetype = str:byte(1)
     local protoMsg = str:sub(2)
-    local ok,err = clustermc.send(nodetype, "@dispatcher", "request", fd, uid, protoMsg, #protoMsg)     
+    local ok,err = clustermc.call(nodetype, "@dispatcher", "request", fd, uid, protoMsg, #protoMsg)     
     if not ok then
         local _, cmd, data, response = host:dispatch(protoMsg, #protoMsg)
         logger.err("call %s failed, data:%s", cmd, json.encode(data))
@@ -95,9 +95,9 @@ local function dispatch_msg(fd, msg, sz)
 
         end
     else
-        logger.info("clustermc call node:%s OK", nodetype)
+        logger.info("clustermc call node:%s %s %s", nodetype, ok, err)
     end
-    skynet.trash(msg, sz)
+    --skynet.trash(msg, sz)
 end
 
 skynet.register_protocol {
@@ -107,8 +107,8 @@ skynet.register_protocol {
         return msg, sz 
     end,
     dispatch = function(fd, _, msg, sz)
-        --skynet.ignoreret()
-        --skynet.trace()
+        skynet.ignoreret()
+        skynet.trace()
         local ok, err = xpcall(dispatch_msg, futil.handle_err, fd, msg, sz)
         if not ok then
             logger.err("dispatch_msg failed fd:%s:%s", fd, err)
