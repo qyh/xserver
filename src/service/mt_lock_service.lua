@@ -13,6 +13,7 @@ function CMD.lock(k, v, sec)
     if not (k and v) then
         return false
     end
+    logger.warn("lock:%s %s %s", k, v, sec)
     sec = sec or timeout
     local rv = pb:set(k, v, "ex", sec, "nx")
     if rv then
@@ -26,8 +27,23 @@ function CMD.unlock(k, v)
     if not r then
         return false
     end
-    if r and tostring(r) == tostring(v) then
-        pb:del(k)
+    logger.warn("unlock:%s %s", k, v)
+    local s = [[
+        local k = KEYS[1]
+        local v = KEYS[2]
+        local oldv = redis.call("get", k)
+        if oldv == v then
+            redis.call("del", k)
+            return 1
+        else
+            if not oldv then
+                return 1
+            end
+        end
+        return 0
+    ]]
+    local n = pb:eval(s, 2, k, v)
+    if tonumber(n) == 1 then
         pb.pub(const.pubsubChannel.ch_release_lock, k)
         return true
     end
@@ -41,18 +57,18 @@ function CMD.lock_wait(k, v, sec)
     local is_timeout = false
     local enter_t = os.time()
     while true do
+        local cur_t = os.time()
+        if cur_t - enter_t > sec then
+            is_timeout = true
+            ok = false
+            break
+        end
         if not CMD.lock(k, v, sec) then
             table.insert(wait_cos, {co=co, k=k, v=v, sec=sec, enter_t=enter_t})
             skynet.wait(co)
         else
-            local cur_t = os.time()
-            if cur_t - enter_t > sec then
-                is_timeout = true
-                ok = false
-            else
-                is_timeout = false
-                ok = true
-            end
+            is_timeout = false
+            ok = true
             break
         end
     end
