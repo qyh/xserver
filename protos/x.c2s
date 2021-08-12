@@ -1,0 +1,35 @@
+.package {
+    type 0 : integer
+    session 1 : integer
+}
+
+handshake 1 {
+    request {
+        clientkey 0 : string
+    }
+    response {
+        code 0 : string 
+        serverkey 1 : string
+    }
+}
+
+auth 2 {
+    request {
+        auth_code 0 : string
+    }
+    response {
+        ok 0 : boolean
+    }
+}
+
+heartbeat 3 {}
+
+foobar 4 {
+    request {
+        what 0: string
+        value 1: string 
+    }
+    response {
+        ok 0  : boolean 
+    }
+}

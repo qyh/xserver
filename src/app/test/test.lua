@@ -4,15 +4,16 @@ local json = require "cjson"
 local futil = require "futil"
 local dbconf = require "db.db"
 local name = skynet.getenv("name")
+local mt_lock = require "mt_lock"
 local function boot()
     skynet.newservice("logservice")
+    skynet.newservice("redis_pubsub")
+    skynet.newservice("mt_lock_service")
     local sdb = skynet.newservice("simpledb")
     local t = os.time()
-    while os.time() - t < 30 do
-        skynet.call(sdb, "lua", "SET", "a", "I am a, hello")
-        local a = skynet.call(sdb, "lua","GET", "a")
-        logger.debug("a:%s", a)
-        skynet.sleep(10)
+    for i=1, 10 do
+        local l = mt_lock.new_lock("testlock", i, 10)
+        l.unlock()
     end
     logger.warn("done!")
 end

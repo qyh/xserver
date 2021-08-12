@@ -5,10 +5,11 @@ local socket = require "skynet.socket"
 local codec = require "codec"
 local logger = require "logger"
 local futil = require "futil"
+local json = require "cjson"
 local node_type = require "node_type"
-
+local protofile = skynet.getenv("proto") or "x"
 local proto_loader = require "proto_loader"
-local proto = proto_loader.load("test")
+local proto = proto_loader.load(protofile)
 local sproto = require "sproto"
 local host = sproto.new(proto.s2c):host "package"
 local request = host:attach(sproto.new(proto.c2s))
@@ -18,6 +19,12 @@ local CMD = {}
 local sender = {
     session = 0 
 }
+
+local REQ = {}
+
+function REQ.heartbeat(data)
+    logger.warn("recv heartbeat :%s", json.encode(data))
+end
 local function dispatch64(so)
 	local text = so:read(2)
     if not text then
@@ -44,7 +51,14 @@ local function dispatch(so)
     logger.debug("recv node_type:%s, err_code:%s", node_type, err_code)
     if err_code == 0 then
         local t, session, resp = host:dispatch(protoMsg)
-        return session, true, resp 
+        if t == 'RESPONSE' then
+            return session, true, resp 
+        else
+            local f = REQ[session]
+            if f then
+                f(resp)
+            end
+        end
     else
         return session, false, nil  
     end
@@ -76,7 +90,7 @@ function CMD.connect(info)
 end
 
 skynet.init(function()
-    skynet.timeout(100, function()
+    local function f()
         logger.debug('client request...')
         local msg = CMD.request(node_type.room, 'foobar', {what = "hello", value="world"})
         logger.debug('request end:%s', futil.toStr(msg))
@@ -86,7 +100,9 @@ skynet.init(function()
         logger.debug('client request3...')
         local msg = CMD.request(node_type.room, 'foobar', {what = "hello", value="world"})
         logger.warn('request3 end:%s, ALL DONE', futil.toStr(msg))
-    end)
+        skynet.timeout(100, f)
+    end
+    skynet.timeout(100, f)
 end)
 
 skynet.start(function()

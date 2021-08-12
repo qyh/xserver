@@ -24,3 +24,4 @@ nodeip = "127.0.0.1"
 nodeport = "50606"
 nodeid = 2 
 --cluster config end
+proto = "x"

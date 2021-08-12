@@ -15,3 +15,4 @@ preload = '../src/app/'..name..'/preload.lua'
 redis = "test" 
 db = "test"
 --daemon="../run/"..name..".pid"
+proto = "x"

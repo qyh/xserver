@@ -5,9 +5,9 @@ local futil = require "futil"
 local function boot()
     skynet.newservice("logservice")
     skynet.newservice("clustermgr")
-    skynet.uniqueservice("dispatcher")
-    skynet.newservice("room")
-    logger.info("room start success")
+    skynet.newservice("dispatcher")
+    skynet.newservice("login")
+    logger.info("loginserver start success")
 end
 skynet.start(function()
     local ok, res = xpcall(boot, futil.handle_err)

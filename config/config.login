@@ -1,26 +1,27 @@
 thread = 8
-name = "xserver"
---logger = "../log/"..name..".log" 
+name = "login"
+logger = "../log/"..name.."_core"..".log" 
 logpath = "../log"
 harbor = 0
-start = "main"
-bootstrap = "snlua bootstrap"	-- The service for bootstrap
-luaservice = "./service/?.lua;../server/?.lua;./examples/login/?.lua;"
-	.."../service/?.lua;"
+start = "main" 
+bootstrap = "snlua bootstrap"    -- The service for bootstrap
+luaservice = "./service/?.lua;".."../src/app/"..name.."/?.lua;"
+	.."../src/service/?.lua;"
+    .."../src/service/cluster/?.lua;"
+    .."./lualib/compat10/?.lua;"
+    .."../src/service/login/?.lua;"
 lualoader = "lualib/loader.lua"
 cpath = "./cservice/?.so;../luaclib/?.so;"
-preload = '../server/preload.lua'
-redis_conf = [[{
-	"host":"127.0.0.1",
-	"port": 6379
-}]]
-mysql_conf = [[{
-	"host":"192.168.83.178",
-	"port":3306,
-    "user":"root",
-    "password":"root",
-    "database":"imserver"
-}]]
-websocket_port = 8008
-simpleweb_port = 8080
---daemon="../"..name..".pid"
+preload = '../src/app/'..name..'/preload.lua'
+redis = "test" 
+db = "test"
+--daemon="../run/"..name..".pid"
+
+--cluster config
+nodename = "login1"
+nodetype = 2 
+nodeip = "127.0.0.1"
+nodeport = "50607"
+nodeid = 3 
+--cluster config end
+proto = "x"

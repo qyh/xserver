@@ -2,40 +2,61 @@ local skynet = require "skynet"
 local logger = require "logger"
 local clustermc = require "clustermc"
 local json = require "cjson"
+local protofile = skynet.getenv("proto") or "x"
 local proto_loader = require "proto_loader"
-local proto = proto_loader.load("test")
+local proto = proto_loader.load(protofile)
 local sproto = require "sproto"
 local node_type = require "node_type"
 local netpack = require "skynet.netpack"
 require "tostring"
 require "skynet.manager"    -- import skynet.register
 local host = sproto.new(proto.c2s):host "package"
+local request = host:attach(sproto.new(proto.s2c))
 local db = {}
 local my_type = node_type.room
 
 local command = {}
+local handler = {}
+local uid_data = {}
 
 local function send_client(fd, msg)
     local ok, err = clustermc.call(node_type.connector, "@xwatchdog", "send_client", my_type, fd, msg)
 end
 
-function command.get(key)
-    return db[key]
+function command.register(dst, cmds)
+    logger.debug("register %s %s", dst, json.encode(cmds))
+    if not (cmds and next(cmds)) then
+        return false
+    end
+    for _, cmd in pairs(cmds) do
+        handler[cmd] = dst
+    end
+    return true
 end
 
-function command.set(key, value)
-    logger.debug("SET %s %s", key, value)
-    local last = db[key]
-    db[key] = value
-    return last
+local function dispatch_to_handler(cmd, uid, data, response)
+    local dst = handler[cmd]
+    if dst then
+        if response then
+            return skynet.call(dst, "lua", cmd, uid, data)
+        else
+            skynet.send(dst, "lua", cmd, uid, data)
+        end
+    end
 end
 
-function command.foobar(data)
-    logger.info("command.foobar:%s", json.encode(data))
-    return {ok = true}
+--send request to client
+function command.request_user(uid, cmd, data)
+    local user_data  = uid_data[uid]
+    local msg = request(cmd, data, 1)
+    return send_client(user_data.fd, msg)
 end
 
 function command.request(fd, uid, msg, sz)
+    uid_data[uid] = {
+        fd = fd,
+        connector = "connector1",
+    } 
     logger.debug("command.request fd:%s, uid:%s", fd, uid)
     local _type, cmd, data, response = host:dispatch(msg, sz)
     logger.debug("command.request cmd:%s, data:%s, %s", cmd, json.encode(data), _type)
@@ -49,7 +70,11 @@ function command.request(fd, uid, msg, sz)
                 send_client(fd, str)
             end
         else
-            logger.err("no %s fuction", cmd)
+            local r = dispatch_to_handler(cmd, uid, data, response)
+            if response and r then
+                local res = response(r)
+                send_client(fd, res)
+            end
         end
     end
     return "OK" 
