@@ -125,7 +125,8 @@ function REQ.auth(fd, data)
     logger.warn("auth :%s %s, secret:%s", fd, json.encode(data), crypt.base64encode(secret))
     local hmac = crypt.hmac64(user.code, secret)
     if hmac ~= data.auth_code then
-        logger.err("auth failed:%s ~= %s", crypt.base64encode(hmac), crypt.base64encode(data.auth_code))
+        logger.err("auth failed:%s ~= %s, fd:%s", crypt.base64encode(hmac), crypt.base64encode(data.auth_code), fd)
+        kick(fd)
         return {ok = false}
     else
         logger.warn("auth OK :%s", crypt.base64encode(hmac))
