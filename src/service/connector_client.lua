@@ -13,9 +13,8 @@ local proto = proto_loader.load(protofile)
 local sproto = require "sproto"
 local host = sproto.new(proto.s2c):host "package"
 local request = host:attach(sproto.new(proto.c2s))
-local secret = ""
 local CMD = {}
-
+local auth_info = {}
 local sender = {
     session = 0 
 }
@@ -92,6 +91,7 @@ end
 
 local function auth()
     local clientkey = tostring(math.random()):sub(-8, -1)
+    auth_info.clientkey = clientkey
     local auth_ok = false
     logger.info('handshake...')
     local handshake = CMD.request(node_type.connector, 'handshake',{
@@ -100,9 +100,15 @@ local function auth()
     logger.info('handshake res:%s', json.encode(handshake))
     if handshake and handshake.code and handshake.serverkey then
         logger.info('auth...')
+        auth_info.code = handshake.code
+        auth_info.serverkey = handshake.serverkey
+        auth_info.secret = crypt.dhsecret(auth_info.clientkey, auth_info.serverkey)
+        local auth_code = crypt.hmac64(auth_info.code, auth_info.secret)
+        logger.warn('auth_code:%s, secret:%s', crypt.base64encode(auth_code), crypt.base64encode(auth_info.secret))
         local authres = CMD.request(node_type.connector, 'auth', {
-            auth_code = "1234"
+            auth_code = auth_code 
         })
+
         logger.info('auth res:%s', json.encode(authres))
         if authres and authres.ok then
             auth_ok = true
@@ -123,7 +129,7 @@ local function send_test()
     logger.debug('client request3...')
     local msg = CMD.request(node_type.room, 'foobar', {what = "hello", value="world"})
     logger.warn('request3 end:%s, ALL DONE', futil.toStr(msg))
-    skynet.timeout(100, send_test)
+    --skynet.timeout(100, send_test)
 end
 
 skynet.init(function()
