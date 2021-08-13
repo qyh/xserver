@@ -30,4 +30,8 @@ function mc.send(nodetype, ...)
     return timeout_send(10, nodetype, ...) 
 end
 
+function mc.call_node(nodename, ...)
+    return pcall(cluster.call, nodename, ...)
+end
+
 return mc

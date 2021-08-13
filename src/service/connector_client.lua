@@ -13,7 +13,7 @@ local proto = proto_loader.load(protofile)
 local sproto = require "sproto"
 local host = sproto.new(proto.s2c):host "package"
 local request = host:attach(sproto.new(proto.c2s))
-
+local secret = ""
 local CMD = {}
 
 local sender = {
@@ -57,6 +57,7 @@ local function dispatch(so)
             local f = REQ[session]
             if f then
                 f(resp)
+                return 0, true, nil
             end
         end
     else
@@ -89,20 +90,50 @@ function CMD.connect(info)
     return sender.__sock:connect(true)
 end
 
-skynet.init(function()
-    local function f()
-        logger.debug('client request...')
-        local msg = CMD.request(node_type.room, 'foobar', {what = "hello", value="world"})
-        logger.debug('request end:%s', futil.toStr(msg))
-        logger.debug('client request2...')
-        local ok, msg = pcall(CMD.request,node_type.login, 'foobar', {what = "hello", value="world"})
-        logger.debug('request2 end:%s', futil.toStr(msg))
-        logger.debug('client request3...')
-        local msg = CMD.request(node_type.room, 'foobar', {what = "hello", value="world"})
-        logger.warn('request3 end:%s, ALL DONE', futil.toStr(msg))
-        skynet.timeout(100, f)
+local function auth()
+    local clientkey = tostring(math.random()):sub(-8, -1)
+    local auth_ok = false
+    logger.info('handshake...')
+    local handshake = CMD.request(node_type.connector, 'handshake',{
+        clientkey = clientkey
+    })
+    logger.info('handshake res:%s', json.encode(handshake))
+    if handshake and handshake.code and handshake.serverkey then
+        logger.info('auth...')
+        local authres = CMD.request(node_type.connector, 'auth', {
+            auth_code = "1234"
+        })
+        logger.info('auth res:%s', json.encode(authres))
+        if authres and authres.ok then
+            auth_ok = true
+        end
     end
-    skynet.timeout(100, f)
+    if auth_ok then
+        logger.debug('client request login...')
+        local ok, msg = pcall(CMD.request,node_type.login, 'login', {account= "jake", token="1234"})
+        logger.debug('request login end:%s', futil.toStr(msg))
+    end
+    return auth_ok 
+end
+
+local function send_test()
+    logger.debug('client request...')
+    local msg = CMD.request(node_type.room, 'foobar', {what = "hello", value="world"})
+    logger.debug('request end:%s', futil.toStr(msg))
+    logger.debug('client request3...')
+    local msg = CMD.request(node_type.room, 'foobar', {what = "hello", value="world"})
+    logger.warn('request3 end:%s, ALL DONE', futil.toStr(msg))
+    skynet.timeout(100, send_test)
+end
+
+skynet.init(function()
+    skynet.timeout(100, function()
+        if auth() then
+            send_test()
+        else
+            logger.err("auth failed")
+        end
+    end)
 end)
 
 skynet.start(function()

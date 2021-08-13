@@ -19,9 +19,8 @@ db = "test"
 
 --cluster config
 nodename = "login1"
-nodetype = 2 
+nodetype = 3 
 nodeip = "127.0.0.1"
 nodeport = "50607"
-nodeid = 3 
 --cluster config end
 proto = "x"

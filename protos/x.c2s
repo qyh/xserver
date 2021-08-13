@@ -22,9 +22,25 @@ auth 2 {
     }
 }
 
+
 heartbeat 3 {}
 
-foobar 4 {
+.user_data {
+    uid 0: integer
+}
+
+login 4 {
+    request {
+        account 0: string       # account or phone
+        token 1: string         # passwd or token
+    }
+    response {
+        ok 0: boolean
+        user_data 1: user_data
+    }
+}
+
+foobar 5 {
     request {
         what 0: string
         value 1: string 

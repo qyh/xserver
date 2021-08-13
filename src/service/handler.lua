@@ -16,6 +16,11 @@ local command = {}
 function handler.request_user(uid, cmd, data)
     skynet.call(".dispatcher", "lua", "request_user", uid, cmd, data)
 end
+
+function handler.get_user_data(fd)
+    return skynet.call(".dispatcher", "lua", "get_user_data", fd)
+end
+
 function handler.start(name, cmds)
     command = cmds
     skynet.start(function()

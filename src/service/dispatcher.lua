@@ -13,14 +13,18 @@ require "skynet.manager"    -- import skynet.register
 local host = sproto.new(proto.c2s):host "package"
 local request = host:attach(sproto.new(proto.s2c))
 local db = {}
-local my_type = node_type.room
+local my_type = tonumber(skynet.getenv("nodetype"))
 
 local command = {}
 local handler = {}
 local uid_data = {}
+local fd_data = {}
 
-local function send_client(fd, msg)
-    local ok, err = clustermc.call(node_type.connector, "@xwatchdog", "send_client", my_type, fd, msg)
+local function send_client(userdata, msg)
+    if not (userdata and userdata.fd and userdata.connector) then
+        return false, "userdata nil"
+    end
+    local ok, err = clustermc.call_node(userdata.connector, "@xwatchdog", "send_client", my_type, userdata.fd, msg)
 end
 
 function command.register(dst, cmds)
@@ -49,15 +53,23 @@ end
 function command.request_user(uid, cmd, data)
     local user_data  = uid_data[uid]
     local msg = request(cmd, data, 1)
-    return send_client(user_data.fd, msg)
+    return send_client(user_data, msg)
 end
 
-function command.request(fd, uid, msg, sz)
-    uid_data[uid] = {
+function command.get_user_data(fd)
+    return fd_data[fd] or uid_data[fd]
+end
+
+function command.request(connector, fd, uid, msg, sz)
+    logger.debug("command.request %s fd:%s, uid:%s", connector, fd, uid)
+    fd_data[fd] = {
         fd = fd,
-        connector = "connector1",
+        uid = uid,
+        connector = connector,
     } 
-    logger.debug("command.request fd:%s, uid:%s", fd, uid)
+    if uid then
+        uid_data[uid] = fd_data[fd]
+    end
     local _type, cmd, data, response = host:dispatch(msg, sz)
     logger.debug("command.request cmd:%s, data:%s, %s", cmd, json.encode(data), _type)
     logger.debug("response:%s", response )
@@ -67,13 +79,13 @@ function command.request(fd, uid, msg, sz)
             local r = f(data)
             if response then
                 local str = response(r)
-                send_client(fd, str)
+                send_client(fd_data[fd], str)
             end
         else
-            local r = dispatch_to_handler(cmd, uid, data, response)
+            local r = dispatch_to_handler(cmd, uid or fd, data, response)
             if response and r then
                 local res = response(r)
-                send_client(fd, res)
+                send_client(fd_data[fd], res)
             end
         end
     end

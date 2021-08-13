@@ -11,10 +11,15 @@ local proto = proto_loader.load(protofile) or "x"
 local sproto = require "sproto"
 local host = sproto.new(proto.c2s):host "package"
 local error_code = require "error_code"
+local nodename = skynet.getenv("nodename")
+local node_type = require "node_type"
 
 local CMD = {}
 local SOCKET = {}
 local gate
+
+local connection = {}
+local auth_data = {}
 
 local function send_package(fd, pack)
     local package = string.pack(">s2", pack)
@@ -57,25 +62,66 @@ function CMD.close(fd)
 end
 
 --msg 为proto消息
-local function pack_response(node_type, err_code, msg) 
+local function pack_response(nodetype, err_code, msg) 
     --打包回应消息
     --第1个字节为结点类型
     --第2~3个字结为错误码
     --后面跟proto消息
     msg = msg or ""
     err_code = err_code & 0xFFFF
-    local str = string.char(node_type) 
+    local str = string.char(nodetype) 
     str = str..string.char(err_code >> 8)..string.char(err_code & 0x00FF)
     return str..msg
 end
 
-function CMD.send_client(node_type, fd, msg) 
-    logger.info("send_client:%s,%s, nodetype:%s", fd, msg, node_type)
+function CMD.send_client(nodetype, fd, msg) 
+    logger.info("send_client:%s,%s, nodetype:%s", fd, msg, nodetype)
     if fd > 0 then
-        local m = pack_response(node_type, error_code.OK, msg)
+        local m = pack_response(nodetype, error_code.OK, msg)
         return send_package(fd, m)
     end
     return nil
+end
+
+local function auth_ok(fd, secret) 
+    logger.info('auth_ok:%s %s', fd, secret)
+    connection[fd] = {
+        fd = fd,
+        secret = secret
+    }
+    return true
+end
+
+function CMD.login_ok(fd, uid) 
+    logger.info('login_ok:%s %s', fd, uid)
+    local user = connection[fd]
+    if not user then
+        return false
+    end
+    user.uid = uid
+    return true
+end
+local REQ = {}
+function REQ.auth(fd, data)
+    local user_auth_data = auth_data[fd]
+    logger.debug("auth :%s %s", fd, json.encode(data))
+    local secret = "1234"
+    auth_ok(fd, secret) 
+    return {ok = true}
+end
+
+function REQ.handshake(fd, data)
+    logger.debug("handshake:%s %s", fd, json.encode(data))
+    auth_data[fd] = {
+        clientkey = data.clientkey
+    }
+    local clientkey = data.clientkey
+    local code = tostring(math.random()):sub(-8, -1)
+    local serverkey = tostring(math.random()):sub(-8, -1) 
+    return {
+        code = code,
+        serverkey = serverkey
+    }
 end
 
 local function dispatch_msg(fd, msg, sz) 
@@ -86,17 +132,39 @@ local function dispatch_msg(fd, msg, sz)
     --第一个字节为结点类型(node_type.lua)
     local nodetype = str:byte(1)
     local protoMsg = str:sub(2)
-    local ok,err = clustermc.call(nodetype, "@dispatcher", "request", fd, uid, protoMsg, #protoMsg)     
-    if not ok then
+    local user = connection[fd] or {}
+    if nodetype == node_type.connector then
         local _, cmd, data, response = host:dispatch(protoMsg, #protoMsg)
-        logger.err("call %s failed, data:%s", cmd, json.encode(data))
-        if response then
-            local res_msg = pack_response(nodetype, error_code.NODE_NOT_FOUND, ret)
+        local f = REQ[cmd]
+        if not f then
+            logger.err("not %s found", cmd)
+            skynet.call(gate, "lua", "kick", fd)
+            return
+        end
+        local r = f(fd, data)
+        if response and r then
+            local res_msg = pack_response(node_type.connector, error_code.OK, response(r))
             send_package(fd, res_msg)
-
         end
     else
-        logger.info("clustermc call node:%s %s %s", nodetype, ok, err)
+        if not (user and user.uid) then
+            if nodetype ~= node_type.login then
+                logger.err('kick not login :%s', fd)
+                skynet.call(gate, "lua", "kick", fd)
+            end
+        end
+        local ok,err = clustermc.call(nodetype, "@dispatcher", "request", nodename, fd, user.uid, protoMsg, #protoMsg)     
+        if not ok then
+            local _, cmd, data, response = host:dispatch(protoMsg, #protoMsg)
+            logger.err("call %s failed, data:%s", cmd, json.encode(data))
+            if response then
+                local res_msg = pack_response(nodetype, error_code.NODE_NOT_FOUND, "")
+                send_package(fd, res_msg)
+
+            end
+        else
+            logger.info("clustermc call node:%s %s %s", nodetype, ok, err)
+        end
     end
     --skynet.trash(msg, sz)
 end
